@@ -21,9 +21,22 @@ python -m http.server 8080
 - หน้าควบคุมหลัก: `http://localhost:8080/index.html`
 - หน้า VirtualDisplay (`800×480`): `http://localhost:8080/display.html`
 
-## วิธีนำไปต่อใน Android Studio
-1. คัดลอกไฟล์ทั้งหมดใน Repo นี้ไปวางที่ `app/src/main/assets/www/`
-2. ดูตัวอย่างการผูก `@JavascriptInterface` ใน [`docs/RideDashBridge.kt.example`](./docs/RideDashBridge.kt.example) และ [`docs/BRIDGE_API.md`](./docs/BRIDGE_API.md)
+## วิธีดาวน์โหลดไฟล์ `.apk` (Build อัตโนมัติผ่าน GitHub Actions)
+ไม่ต้องติดตั้ง Android Studio ในเครื่อง — ทุกครั้งที่ Push โค้ด GitHub Actions (`.github/workflows/build-apk.yml`) จะรวมไฟล์ Frontend ล่าสุดเข้า `assets/www/` และคอมไพล์ไฟล์ **`.apk`** ให้อัตโนมัติ:
+1. ไปที่หน้า Repository บน GitHub → แท็บ **Actions**
+2. คลิกที่ Workflow ล่าสุด **Build Android APK**
+3. เลื่อนลงไปส่วน **Artifacts** แล้วกดดาวน์โหลด **`RideDash-Android-APK`** (แตกไฟล์ซิปจะได้ `RideDash-debug.apk`)
+4. ส่งไฟล์ `RideDash-debug.apk` เข้ามือถือ Android แล้วกดติดตั้ง (อนุญาต *Install from unknown sources* หากระบบถาม)
+
+### โครงสร้างโปรเจกต์ Android (`android/`)
+- `MainActivity.kt` — โฮสต์ WebView (`WebViewAssetLoader`), กล้องสแกน QR แบบ Native (ZXing), เปิดแอปภายนอกจริง, เลือกไฟล์เพลงจากเครื่อง
+- `RideDashBridge.kt` — `@JavascriptInterface` เชื่อมต่อ `window.RideDashNative` ↔ `window.RideDashBridge`
+- `RideDashForegroundService.kt` — บริการเบื้องหลัง (Foreground Location Service) อ่าน GPS จริงและอุณหภูมิเครื่องแม้สลับแอปหรือปิดจอ
+- `VirtualDisplayStreamer.kt` — โครงสร้าง `VirtualDisplay` + `MediaCodec H.264` Hardware Encoder เรนเดอร์ `display.html` พร้อมจุดต่อ `FrameOutputSink` สำหรับใส่ MotoPlay Wi-Fi Socket ในขั้นถัดไป
+
+## วิธีเปิดต่อยอดใน Android Studio
+1. เปิดโฟลเดอร์ `android/` ใน Android Studio (Gradle จะดึงไฟล์ Frontend จากรูทเข้า `app/src/main/assets/www/` อัตโนมัติตอน Build)
+2. ดูรายละเอียดสัญญาเชื่อมต่อทั้งหมดใน [`docs/BRIDGE_API.md`](./docs/BRIDGE_API.md)
 
 ---
 *จัดทำโดย ratchapoom และ Mynas4ter2*
