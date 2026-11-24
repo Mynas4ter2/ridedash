@@ -1,123 +1,129 @@
-export const STORAGE_KEY = 'ridedash.v3';
-export const LEGACY_V2_KEY = 'ridedash.v2';
-export const LEGACY_FUEL_KEY = 'ridedash.fuel.v1';
+export const STORAGE_KEY = 'ridedash.classic.v1';
+export const LEGACY_KEYS = ['ridedash.v3', 'ridedash.v2', 'ridedash.fuel.v1'];
 
 export const APP_ICONS = {
   map: '<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
   music: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',
   trip: '<path d="M12 21a9 9 0 1 1 9-9"/><path d="M12 12l5-4"/>',
-  phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.58 2.81.7A2 2 0 0 1 22 16.92z"/>',
-  weather: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>',
-  home: '<rect x="3" y="4" width="6" height="6" rx="1.5"/><rect x="15" y="4" width="6" height="6" rx="1.5"/><rect x="3" y="14" width="6" height="6" rx="1.5"/><rect x="15" y="14" width="6" height="6" rx="1.5"/>'
+  home: '<rect x="3" y="5" width="5" height="5" rx="1.2"/><rect x="9.5" y="5" width="5" height="5" rx="1.2"/><rect x="16" y="5" width="5" height="5" rx="1.2"/><rect x="3" y="12" width="5" height="5" rx="1.2"/><rect x="9.5" y="12" width="5" height="5" rx="1.2"/><rect x="16" y="12" width="5" height="5" rx="1.2"/>'
 };
 
 export const APPS = {
-  map:     { id: 'map',     name: 'แผนที่',        icon: APP_ICONS.map,     grad: ['#0284C7', '#0EA5E9'], internal: true },
-  music:   { id: 'music',   name: 'เพลง',          icon: APP_ICONS.music,   grad: ['#6366F1', '#8B5CF6'], internal: true },
-  trip:    { id: 'trip',    name: 'ทริป',          icon: APP_ICONS.trip,    grad: ['#EA580C', '#F59E0B'], internal: true },
-  phone:   { id: 'phone',   name: 'โทรด่วน',       icon: APP_ICONS.phone,   grad: ['#16A34A', '#22C55E'], internal: true },
-  weather: { id: 'weather', name: 'อากาศ',         icon: APP_ICONS.weather, grad: ['#0284C7', '#38BDF8'], internal: true },
-  spotify: { id: 'spotify', name: 'Spotify',       letter: 'S',             grad: ['#16A34A', '#15803D'], url: 'https://open.spotify.com' },
-  ytm:     { id: 'ytm',     name: 'YouTube Music', letter: 'Y',             grad: ['#DC2626', '#B91C1C'], url: 'https://music.youtube.com' },
-  gmaps:   { id: 'gmaps',   name: 'Google Maps',   letter: 'G',             grad: ['#0284C7', '#1D4ED8'], url: 'https://www.google.com/maps' },
-  line:    { id: 'line',    name: 'LINE',          letter: 'L',             grad: ['#16A34A', '#15803D'], url: 'https://line.me' }
+  map:     { id: 'map',     n: 'แผนที่',        p: APP_ICONS.map,   grad: ['#34C759', '#1F9D45'], pkg: 'com.google.android.apps.maps', internal: true },
+  music:   { id: 'music',   n: 'เพลง',          p: APP_ICONS.music, grad: ['#FF453A', '#C4122F'], pkg: '', internal: true },
+  trip:    { id: 'trip',    n: 'ทริป',          p: APP_ICONS.trip,  grad: ['#FF9F0A', '#E0640A'], pkg: '', internal: true },
+  spotify: { id: 'spotify', n: 'Spotify',       l: 'S',             grad: ['#1ED760', '#0E8F3D'], pkg: 'com.spotify.music', url: 'https://open.spotify.com' },
+  ytm:     { id: 'ytm',     n: 'YouTube Music', l: 'Y',             grad: ['#FF3B30', '#B80D00'], pkg: 'com.google.android.apps.youtube.music', url: 'https://music.youtube.com' },
+  pod:     { id: 'pod',     n: 'Podcasts',      l: 'P',             grad: ['#BF5AF2', '#7A2BD1'], pkg: 'com.google.android.apps.podcasts', url: 'https://podcasts.google.com' },
+  phone:   { id: 'phone',   n: 'โทรศัพท์',      l: 'โ',             grad: ['#30D158', '#1B9A3E'], pkg: 'com.android.dialer', url: 'tel:' },
+  line:    { id: 'line',    n: 'LINE',          l: 'L',             grad: ['#34C759', '#1AA34A'], pkg: 'jp.naver.line.android', url: 'https://line.me' },
+  cal:     { id: 'cal',     n: 'ปฏิทิน',        l: 'ป',             grad: ['#5E5CE6', '#3634A3'], pkg: 'com.google.android.calendar', url: 'https://calendar.google.com' }
 };
+
+export const PROV = ['Amap', 'Google Maps', 'Waze', 'Apple Maps'];
+
+export const RATIOS = [
+  ['Auto', null],
+  ['5:3', 5 / 3],
+  ['16:9', 16 / 9],
+  ['16:10', 1.6],
+  ['4:3', 4 / 3]
+];
+
+export const RES = {
+  'Auto':  ['Auto', '800×480', '1000×600', '1280×720'],
+  '5:3':   ['800×480', '1000×600', '1280×768'],
+  '16:9':  ['1280×720', '960×540', '640×360'],
+  '16:10': ['1280×800', '1024×640', '800×500'],
+  '4:3':   ['1024×768', '800×600', '640×480']
+};
+
+export const MODES = [
+  ['contain', 'ขอบดำ'],
+  ['cover', 'ครอบภาพ'],
+  ['fill', 'ยืดภาพ']
+];
 
 export const SAFE_ALLOW = ['map', 'music', 'phone'];
 
-export const MAP_STYLES = [
-  { id: 'light', label: 'กลางวัน (สว่าง)' },
-  { id: 'dark', label: 'กลางคืน (มืด)' },
-  { id: 'satellite', label: 'ดาวเทียม' }
-];
-
-export const DEFAULT_CONTACTS = [
-  { name: 'การแพทย์ฉุกเฉิน', tel: '1669' },
-  { name: 'ตำรวจทางหลวง', tel: '1193' },
-  { name: 'เหตุด่วนเหตุร้าย', tel: '191' }
+export const ACTS = [
+  ['left', 'เลื่อนซ้าย'],
+  ['right', 'เลื่อนขวา'],
+  ['open', 'เปิดที่โฟกัส'],
+  ['back', 'กลับหน้าโฮม'],
+  ['map', 'เปิดแผนที่'],
+  ['music', 'เปิดเพลง'],
+  ['mode', 'สลับโหมดภาพ'],
+  ['none', 'ไม่ทำอะไร']
 ];
 
 export const DEFAULT_RADIOS = [
-  { id: 'r1', title: 'Groove Salad', artist: 'SomaFM · Chill / Ambient', url: 'https://ice2.somafm.com/groovesalad-128-mp3' },
+  { id: 'r1', title: 'Night Ride · Groove', artist: 'SomaFM · Chill / Ambient', url: 'https://ice2.somafm.com/groovesalad-128-mp3' },
   { id: 'r2', title: 'Lush', artist: 'SomaFM · Vocal / Mellow', url: 'https://ice2.somafm.com/lush-128-mp3' },
-  { id: 'r3', title: 'Def CON Radio', artist: 'SomaFM · Electronic / Drive', url: 'https://ice2.somafm.com/defcon-128-mp3' }
+  { id: 'r3', title: 'Def CON Drive', artist: 'SomaFM · Electronic', url: 'https://ice2.somafm.com/defcon-128-mp3' }
 ];
 
 export const state = {
-  theme: 'dark',          // 'dark' (default) | 'light'
-  hudTheme: 'night',      // 'night' (default) | 'day'
-  activeTab: 0,           // 0: Home, 1: Map, 2: Trip/Fuel, 3: Settings
-  tripSubTab: 'trip',     // 'trip' | 'fuel'
-  screen: 'home',         // HUD view: 'home' | 'map' | 'music' | 'trip' | 'phone' | 'weather' | ext
-  rideMode: false,
+  theme: 'dark',
   termsAccepted: false,
-  autoTripOnNav: true,
+  mirrorMode: false,
 
-  dock: ['map', 'music', 'trip', 'phone'],
-  favorites: { home: null, work: null },
-  mapStyle: 'dark',
+  // Handlebar button mapping (short, long)
+  map: {
+    L: ['left', 'map'],
+    R: ['right', 'music'],
+    O: ['open', 'back'],
+    B: ['back', 'none']
+  },
+
+  // Dashboard display & dock
+  dock: ['map', 'music', 'trip'],
+  screen: 'home',
+  foc: 0,
+  prov: 'Amap',
+  rname: 'Auto',
+  ratio: 5 / 3,
+  res: 'Auto',
+  mode: 'contain',
+
+  // Safe mode & speed/GPS
   safeOn: true,
-  safeLimit: 60,
-  voiceEnabled: true,
-
-  // GPS & Telemetry
-  gpsMode: 'sim',         // 'gps' | 'sim'
-  gpsStatus: 'โหมดจำลอง (ทดสอบ)',
-  lat: 13.736717,         // Bangkok Asok default
+  limit: 60,
+  gpsMode: 'sim', // 'sim' | 'gps' | 'native'
+  gpsStatus: 'โหมดจำลอง',
+  lat: 13.736717,
   lng: 100.5612,
   accuracy: null,
-  speed: 0,
-  simSpeed: 45,
+  speed: 38,
+  simSpeed: 38,
   heading: 45,
-  routeSimActive: false,
 
-  // Live Navigation State
-  nav: {
-    phase: 'idle',        // 'idle' | 'preview' | 'guiding' | 'arrived'
-    destName: '',
-    destLat: null,
-    destLng: null,
-    coords: [],
-    steps: [],
-    stepIdx: 0,
-    totalDistKm: 0,
-    totalDurMin: 0,
-    remDistM: 0,
-    remDurSec: 0,
-    etaText: '',
-    nextDistText: 'พร้อมนำทาง',
-    nextText: 'ค้นหาจุดหมายในแท็บแผนที่หรือหน้าหลัก',
-    nextIcon: 'straight'
+  // Diagnostics & connection
+  hot: false,
+  recon: false,
+  rc: 0,
+  logMsg: false,
+  lastDiag: { fps: 30, lat: 68, tmp: 38, br: '2.9', conn: 'พร้อมเชื่อมต่อ' },
+  nativeDiag: null,
+  conn: {
+    status: 'disconnected', // disconnected | scanning | connecting | streaming | reconnecting
+    bikeName: 'Zontes 368K',
+    ip: '',
+    qrData: '',
+    message: 'รอสแกน QR ที่จอรถ'
   },
 
-  // Active Trip
-  trip: {
-    on: false,
-    paused: false,
-    seconds: 0,
-    distanceKm: 0,
-    maxSpeed: 0
-  },
+  // Active trip & history
+  trip: { on: false, paused: false, seconds: 0, distanceKm: 0, maxSpeed: 0 },
   tripFilter: 'all',
   trips: [],
 
-  // Fuel
+  // Fuel records
   fuels: [],
   lastFuelPrice: '',
 
-  // Contacts & Radios
-  contacts: [...DEFAULT_CONTACTS],
-  radios: [...DEFAULT_RADIOS],
-
-  // Weather
-  weather: {
-    temp: null,
-    desc: 'กำลังโหลด...',
-    icon: '⛅',
-    humidity: null,
-    wind: null,
-    updatedAt: 0
-  }
+  // Radios for music player
+  radios: [...DEFAULT_RADIOS]
 };
 
 const listeners = new Set();
@@ -129,46 +135,44 @@ export function subscribe(fn) {
 
 export function notify(topic = 'all') {
   listeners.forEach((fn) => {
-    try { fn(topic, state); } catch (err) { console.error(err); }
+    try { fn(topic, state); } catch (e) { console.error(e); }
   });
 }
 
 export function loadState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_V2_KEY);
+    let raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const saved = JSON.parse(raw);
-      if (saved.theme === 'light' || saved.theme === 'dark') state.theme = saved.theme;
-      if (saved.hudTheme === 'day' || saved.hudTheme === 'night') state.hudTheme = saved.hudTheme;
-      if (typeof saved.termsAccepted === 'boolean') state.termsAccepted = saved.termsAccepted;
-      if (typeof saved.autoTripOnNav === 'boolean') state.autoTripOnNav = saved.autoTripOnNav;
-      if (saved.favorites && typeof saved.favorites === 'object') {
-        state.favorites = {
-          home: saved.favorites.home || null,
-          work: saved.favorites.work || null
-        };
+      const s = JSON.parse(raw);
+      if (s.theme === 'dark' || s.theme === 'light') state.theme = s.theme;
+      if (typeof s.termsAccepted === 'boolean') state.termsAccepted = s.termsAccepted;
+      if (Array.isArray(s.dock) && s.dock.length) state.dock = s.dock.filter((id) => APPS[id]).slice(0, 4);
+      if (s.prov && PROV.includes(s.prov)) state.prov = s.prov;
+      if (s.rname && RES[s.rname]) {
+        state.rname = s.rname;
+        const found = RATIOS.find((r) => r[0] === s.rname);
+        state.ratio = found && found[1] ? found[1] : 5 / 3;
       }
-      if (Array.isArray(saved.dock) && saved.dock.length) {
-        state.dock = saved.dock.filter((id) => APPS[id]).slice(0, 4);
-      }
-      if (saved.mapStyle && ['light', 'dark', 'satellite'].includes(saved.mapStyle)) {
-        state.mapStyle = saved.mapStyle;
-      }
-      if (typeof saved.safeOn === 'boolean') state.safeOn = saved.safeOn;
-      if (typeof saved.safeLimit === 'number') state.safeLimit = saved.safeLimit;
-      if (typeof saved.voiceEnabled === 'boolean') state.voiceEnabled = saved.voiceEnabled;
-      if (Array.isArray(saved.trips)) state.trips = saved.trips.slice(0, 50);
-      if (Array.isArray(saved.fuels)) state.fuels = saved.fuels.slice(0, 100);
-      if (saved.lastFuelPrice) state.lastFuelPrice = saved.lastFuelPrice;
-      if (Array.isArray(saved.contacts) && saved.contacts.length) state.contacts = saved.contacts.slice(0, 12);
-      if (Array.isArray(saved.radios) && saved.radios.length) state.radios = saved.radios.slice(0, 12);
-    } else {
-      const legacyFuel = localStorage.getItem(LEGACY_FUEL_KEY);
-      if (legacyFuel) {
-        const d = JSON.parse(legacyFuel);
-        if (d && Array.isArray(d.fuels)) state.fuels = d.fuels.slice(0, 100);
-        if (d && d.price) state.lastFuelPrice = d.price;
-      }
+      if (s.res) state.res = s.res;
+      if (s.mode) state.mode = s.mode;
+      if (typeof s.safeOn === 'boolean') state.safeOn = s.safeOn;
+      if (typeof s.limit === 'number') state.limit = s.limit;
+      if (s.map && typeof s.map === 'object') state.map = s.map;
+      if (Array.isArray(s.trips)) state.trips = s.trips.slice(0, 50);
+      if (Array.isArray(s.fuels)) state.fuels = s.fuels.slice(0, 100);
+      if (s.lastFuelPrice) state.lastFuelPrice = s.lastFuelPrice;
+      return;
+    }
+
+    // Migrate saved trips/fuels/terms from previous RideDash versions if present
+    for (const k of LEGACY_KEYS) {
+      const legacyRaw = localStorage.getItem(k);
+      if (!legacyRaw) continue;
+      const d = JSON.parse(legacyRaw);
+      if (Array.isArray(d.trips) && !state.trips.length) state.trips = d.trips.slice(0, 50);
+      if (Array.isArray(d.fuels) && !state.fuels.length) state.fuels = d.fuels.slice(0, 100);
+      if ((d.lastFuelPrice || d.price) && !state.lastFuelPrice) state.lastFuelPrice = d.lastFuelPrice || d.price;
+      if (typeof d.termsAccepted === 'boolean') state.termsAccepted = d.termsAccepted;
     }
   } catch (e) {
     console.warn('Could not load saved state:', e);
@@ -177,38 +181,47 @@ export function loadState() {
 
 export function persistState() {
   try {
-    const payload = {
-      v: 3,
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      v: 1,
       theme: state.theme,
-      hudTheme: state.hudTheme,
       termsAccepted: state.termsAccepted,
-      autoTripOnNav: state.autoTripOnNav,
-      favorites: state.favorites,
       dock: state.dock,
-      mapStyle: state.mapStyle,
+      prov: state.prov,
+      rname: state.rname,
+      res: state.res,
+      mode: state.mode,
       safeOn: state.safeOn,
-      safeLimit: state.safeLimit,
-      voiceEnabled: state.voiceEnabled,
+      limit: state.limit,
+      map: state.map,
       trips: state.trips,
       fuels: state.fuels,
-      lastFuelPrice: state.lastFuelPrice,
-      contacts: state.contacts,
-      radios: state.radios
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  } catch (e) {
-    console.warn('Could not save state:', e);
-  }
+      lastFuelPrice: state.lastFuelPrice
+    }));
+  } catch (e) {}
 }
 
 export function isSafeActive() {
-  return state.safeOn && state.speed >= state.safeLimit;
+  return state.safeOn && state.speed >= state.limit;
 }
 
 export function visibleDock() {
   return isSafeActive()
     ? state.dock.filter((id) => SAFE_ALLOW.includes(id))
     : state.dock;
+}
+
+export function autoResolution() {
+  const w = Math.max(320, Math.round((window.innerWidth || 800) * (window.devicePixelRatio || 1)));
+  const h = Math.max(240, Math.round((window.innerHeight || 480) * (window.devicePixelRatio || 1)));
+  const lw = Math.max(w, h);
+  const lh = Math.min(w, h);
+  return { w: lw, h: lh, text: `${lw}×${lh}` };
+}
+
+export function effectiveResolution() {
+  if (state.res === 'Auto') return autoResolution();
+  const [w, h] = String(state.res).split('×').map(Number);
+  return { w: w || 800, h: h || 480, text: state.res };
 }
 
 export function esc(str) {

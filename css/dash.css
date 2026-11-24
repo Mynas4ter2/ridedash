@@ -1,8 +1,212 @@
 /* ============================================================
-   RideDash v2 — Adaptive Fullscreen Ride HUD
-   Supports BOTH Portrait (1-hand phone mount) AND Landscape
-   (Zontes 368K Mirror / Horizontal Mount) + Day / Night HUD
+   RideDash Display Viewport (Auto-Resolution Container Queries)
+   Works cleanly on:
+   - Mobile Phone Preview (340px wide, zero clipping / zero oval buttons!)
+   - Desktop Preview (650px wide)
+   - Fullscreen Mirror Mode & display.html (800x480 VirtualDisplay)
    ============================================================ */
+
+.dash {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 5 / 3;
+  background: #000;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.dash-surface {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #080A0F;
+  color: #F8FAFC;
+  display: flex;
+  overflow: hidden;
+  container-type: size;
+  container-name: dash;
+  user-select: none;
+  -webkit-user-select: none;
+  flex: none;
+}
+
+/* Fullscreen Mirror Mode & Standalone VirtualDisplay (display.html) */
+body.mirror-mode,
+body.display-only {
+  background: #000;
+  background-image: none;
+  overflow: hidden;
+}
+
+body.mirror-mode .header,
+body.mirror-mode .ctl,
+body.mirror-mode .info,
+body.mirror-mode .device-top,
+body.mirror-mode .handlebar-card,
+body.mirror-mode .bank-nav {
+  display: none !important;
+}
+
+body.mirror-mode .app-shell,
+body.mirror-mode .layout,
+body.mirror-mode .stage {
+  display: block;
+  position: static;
+  max-width: none;
+  padding: 0;
+  margin: 0;
+  height: 100dvh;
+}
+
+body.mirror-mode .device {
+  padding: 0;
+  border-radius: 0;
+  border: 0;
+  box-shadow: none;
+  background: #000;
+  width: 100vw;
+  height: 100dvh;
+}
+
+body.mirror-mode .dash,
+body.display-only .dash {
+  width: 100vw;
+  height: 100dvh;
+  aspect-ratio: auto !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ===== Left Dock (Standard / Desktop Size) ===== */
+.dock {
+  width: 72px;
+  flex: none;
+  background: #050608;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 6px;
+  gap: 8px;
+  z-index: 15;
+}
+
+.sb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 2px;
+}
+
+.sb b {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.sig {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 10px;
+}
+
+.sig i {
+  width: 3px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.8);
+}
+.sig i:nth-child(1) { height: 3px; }
+.sig i:nth-child(2) { height: 5px; }
+.sig i:nth-child(3) { height: 7px; }
+.sig i:nth-child(4) { height: 10px; }
+
+.dock-apps {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+.di {
+  width: 44px;
+  height: 44px;
+  aspect-ratio: 1 / 1;
+  border-radius: 13px;
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  flex: none;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.di svg { width: 54%; height: 54%; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.di:active { transform: scale(0.92); }
+.di.cur { box-shadow: 0 0 0 2px #050608, 0 0 0 4.5px rgba(255, 255, 255, 0.45); }
+.di.foc { box-shadow: 0 0 0 2px #050608, 0 0 0 4.5px #38BDF8; transform: scale(1.06); }
+.di.add0 { background: transparent; border: 1.5px dashed rgba(255, 255, 255, 0.35); color: rgba(255, 255, 255, 0.65); }
+.di.hm { background: #262A34; color: #fff; }
+.di.hm.cur { background: #fff; color: #080A0F; box-shadow: none; }
+
+.di.exit-mirror {
+  display: none;
+  background: rgba(239, 68, 68, 0.24);
+  color: #FCA5A5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  font-size: 15px;
+}
+
+body.mirror-mode .di.exit-mirror {
+  display: flex;
+}
+
+/* ===== Main Dashboard Area ===== */
+.dash-main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: #0C0F16;
+  padding: 10px;
+  display: flex;
+  gap: 10px;
+  overflow: hidden;
+}
+
+/* Persistent Leaflet Map Slot */
+.map-slot {
+  position: relative;
+  flex: 1.7;
+  min-width: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #141821;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dash-main[data-view="map"] .map-slot,
+.dash-main[data-safe="true"][data-view="home"] .map-slot {
+  flex: 1;
+}
+
+.dash-main:not([data-view="home"]):not([data-view="map"]) .map-slot {
+  display: none;
+}
 
 #liveMap {
   position: absolute;
@@ -10,642 +214,351 @@
   width: 100%;
   height: 100%;
   z-index: 1;
-  background: #DCE3EC;
-}
-
-#liveMap.map-dark {
-  background: #141821;
 }
 
 #liveMap.map-dark .leaflet-tile-pane {
   filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(92%) saturate(85%);
 }
 
-.leaflet-container { font-family: var(--font); }
 .leaflet-control-attribution {
-  font-size: 9px !important;
-  background: rgba(15, 23, 42, 0.55) !important;
-  color: rgba(255, 255, 255, 0.75) !important;
-  border-radius: 6px 0 0 0;
+  font-size: 8px !important;
+  background: rgba(8, 10, 15, 0.6) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
 }
-.leaflet-control-attribution a { color: #fff !important; }
+.leaflet-control-attribution a { color: rgba(255, 255, 255, 0.75) !important; }
 
-/* Fullscreen Ride HUD Container */
-.ride-hud {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: #F4EFE6;
-  color: #131B26;
-  flex-direction: column;
-  overflow: hidden;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.ride-hud[data-hud="night"] {
-  background: #090C12;
-  color: #F8FAFC;
-}
-
-body.ride-mode {
-  overflow: hidden;
-}
-
-body.ride-mode .mobile-app,
-body.ride-mode .bottom-nav {
-  display: none !important;
-}
-
-body.ride-mode .ride-hud {
-  display: flex;
-}
-
-/* HUD Theme Variables */
-.ride-hud {
-  --hud-card: #FFFFFF;
-  --hud-card-soft: #F1EBE0;
-  --hud-border: #E4DBC9;
-  --hud-muted: #64748B;
-  --hud-dock: #FFFFFF;
-  --hud-turn-bg: linear-gradient(135deg, #0369A1, #0284C7);
-  --hud-turn-text: #FFFFFF;
-}
-
-.ride-hud[data-hud="night"] {
-  --hud-card: #151B26;
-  --hud-card-soft: #1E2736;
-  --hud-border: rgba(255, 255, 255, 0.1);
-  --hud-muted: #94A3B8;
-  --hud-dock: #0E121A;
-  --hud-turn-bg: linear-gradient(135deg, #075985, #0284C7);
-  --hud-turn-text: #FFFFFF;
-}
-
-/* ===== Portrait Layout (Default for Phones) ===== */
-.hud-body {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  padding: max(10px, env(safe-area-inset-top)) 10px 8px;
-  gap: 8px;
-}
-
-.hud-map-wrap {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  border-radius: 20px;
-  overflow: hidden;
-  border: 1px solid var(--hud-border);
-  background: #141821;
-}
-
-.ride-hud:not([data-view="home"]):not([data-view="map"]) .hud-map-wrap {
-  display: none;
-}
-
-/* Turn-by-Turn Top Banner */
-.hud-turn-bar {
+/* Map Overlays */
+.turn {
   position: absolute;
-  top: 10px;
   left: 10px;
-  right: 10px;
+  top: 10px;
   z-index: 500;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 18px;
-  background: var(--hud-turn-bg);
-  color: var(--hud-turn-text);
-  box-shadow: 0 10px 26px rgba(2, 132, 199, 0.34);
+  gap: 10px;
+  background: rgba(15, 19, 28, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 8px 12px;
+  backdrop-filter: blur(12px);
+  max-width: calc(100% - 20px);
 }
 
-.hud-turn-arrow {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.18);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-}
+.turn svg { width: 26px; height: 26px; flex: none; stroke: #38BDF8; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.turn b { display: block; font-size: 16px; font-weight: 700; line-height: 1.1; }
+.turn small { display: block; font-size: 11px; color: rgba(255, 255, 255, 0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 
-.hud-turn-arrow svg {
-  width: 26px;
-  height: 26px;
-  stroke: #fff;
-  fill: none;
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.hud-turn-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.hud-turn-info b {
-  display: block;
-  font-size: 22px;
+.safe-badge {
+  display: none;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 500;
+  background: linear-gradient(135deg, #FBBF24, #F59E0B);
+  color: #111;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
   font-weight: 700;
-  line-height: 1.08;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
 }
 
-.hud-turn-info small {
-  display: block;
-  font-size: 13px;
-  opacity: 0.92;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+.dash-main[data-safe="true"] .safe-badge { display: inline-flex; }
 
-.hud-turn-actions {
-  display: flex;
-  gap: 6px;
-  flex: none;
-}
-
-.hud-mini-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 11px;
-  border: 0;
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-  font-size: 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.hud-mini-btn.muted {
-  background: rgba(0, 0, 0, 0.28);
-  opacity: 0.72;
-}
-
-/* Map Bottom Overlay Controls inside HUD */
-.hud-map-bottom {
+.spdpill {
+  display: none;
   position: absolute;
   left: 10px;
+  bottom: 10px;
+  z-index: 500;
+  background: rgba(15, 19, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 6px 14px;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.dash-main[data-safe="true"][data-view="home"] .spdpill,
+.dash-main[data-view="map"] .spdpill {
+  display: inline-flex;
+}
+
+.spdpill strong { font-size: 28px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.spdpill span { font-size: 11px; color: rgba(255, 255, 255, 0.75); font-weight: 600; }
+
+.map-right-pills {
+  position: absolute;
   right: 10px;
   bottom: 10px;
   z-index: 500;
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 8px;
-  pointer-events: none;
-}
-
-.hud-map-bottom > * { pointer-events: auto; }
-
-.hud-eta-pill {
-  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 14px;
-  background: var(--hud-card);
-  color: inherit;
-  border: 1px solid var(--hud-border);
-  font-size: 13px;
-  font-weight: 700;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
-}
-
-.hud-safe-pill {
-  display: none;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: #F59E0B;
-  color: #111;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.ride-hud[data-safe="true"] .hud-safe-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.hud-map-fabs {
-  display: flex;
   gap: 6px;
-  margin-left: auto;
 }
 
-.hud-fab {
-  height: 38px;
-  padding: 0 12px;
+.prov-pill {
+  background: rgba(15, 19, 28, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
-  border: 1px solid var(--hud-border);
-  background: var(--hud-card);
-  color: inherit;
-  font-size: 13px;
+  padding: 5px 11px;
+  font-size: 11.5px;
   font-weight: 600;
-  cursor: pointer;
+  color: #fff;
+}
+
+.map-mini-btn {
+  width: 28px;
+  height: 28px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(15, 19, 28, 0.9);
+  color: #38BDF8;
+  font-size: 13px;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+  justify-content: center;
+  cursor: pointer;
 }
 
-.hud-fab.active {
-  background: #0284C7;
-  color: #fff;
-  border-color: transparent;
+/* Right Side Column (Music + Speed/Heading) */
+.dash-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.hud-fab.danger {
-  background: #DC2626;
-  color: #fff;
-  border-color: transparent;
-}
-
-/* HUD Side / Bottom Companion Strip (Speed + Media) */
-.hud-strip {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  flex: none;
-}
-
-.ride-hud:not([data-view="home"]) .hud-strip {
+.dash-main:not([data-view="home"]) .dash-col,
+.dash-main[data-safe="true"] .dash-col {
   display: none;
 }
 
-/* Safe Mode in Portrait: Hide music card, widen speed card */
-.ride-hud[data-safe="true"] .hud-media-tile {
-  display: none;
-}
-.ride-hud[data-safe="true"] .hud-strip {
-  grid-template-columns: 1fr;
-}
-
-.hud-tile {
-  background: var(--hud-card);
-  border: 1px solid var(--hud-border);
+.dash-card {
+  flex: 1;
+  min-height: 0;
   border-radius: 18px;
+  background: #171C26;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 6px;
-  min-width: 0;
-}
-
-.hud-speed-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-.hud-speed-val {
-  font-size: 38px;
-  font-weight: 700;
-  line-height: 0.95;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
-}
-
-.hud-speed-unit {
-  font-size: 13px;
-  color: var(--hud-muted);
-  font-weight: 600;
-}
-
-.hud-speed-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-  color: var(--hud-muted);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.hud-media-top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.hud-media-art {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #6366F1, #8B5CF6);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  flex: none;
-}
-
-.hud-media-txt {
-  min-width: 0;
-  flex: 1;
-}
-
-.hud-media-txt b {
-  display: block;
-  font-size: 13.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.hud-media-txt small {
-  display: block;
-  font-size: 11px;
-  color: var(--hud-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.hud-media-ctrls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-.hud-mbtn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 0;
-  background: var(--hud-card-soft);
-  color: inherit;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex: none;
-}
-
-.hud-mbtn.play {
-  width: 38px;
-  height: 38px;
-  background: #6366F1;
-  color: #fff;
-}
-
-.hud-mbtn svg { width: 17px; height: 17px; fill: currentColor; }
-
-/* Full App Screens inside HUD */
-.hud-screen {
-  display: none;
-  flex: 1;
-  min-height: 0;
-  background: var(--hud-card);
-  border: 1px solid var(--hud-border);
-  border-radius: 20px;
-  padding: 18px;
-  overflow-y: auto;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.ride-hud[data-view="music"] .hud-screen[data-screen="music"],
-.ride-hud[data-view="trip"] .hud-screen[data-screen="trip"],
-.ride-hud[data-view="phone"] .hud-screen[data-screen="phone"],
-.ride-hud[data-view="weather"] .hud-screen[data-screen="weather"],
-.ride-hud[data-view="ext"] .hud-screen[data-screen="ext"] {
-  display: flex;
-}
-
-.hud-screen-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.hud-screen-head h2 { font-size: 20px; font-weight: 700; }
-
-.hud-progress {
-  width: 100%;
-  height: 7px;
-  border-radius: 99px;
-  background: var(--hud-card-soft);
   overflow: hidden;
   cursor: pointer;
 }
 
-.hud-progress-fill {
-  height: 100%;
-  width: 0%;
-  background: #6366F1;
-  border-radius: 99px;
-}
-
-.hud-dial-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+.np-row {
+  display: flex;
+  align-items: center;
   gap: 10px;
-  flex: 1;
-  align-content: start;
+  min-width: 0;
 }
 
-.hud-dial-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 16px 10px;
-  border-radius: 16px;
-  background: var(--hud-card-soft);
-  border: 1px solid var(--hud-border);
-  text-decoration: none;
-  text-align: center;
-}
-
-.hud-dial-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: #16A34A;
-  color: #fff;
+.art {
+  width: 40px;
+  height: 40px;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #FF375F, #5E5CE6);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  font-weight: 700;
-}
-
-/* Bottom Horizontal Dock (Portrait) */
-.hud-dock {
   flex: none;
-  background: var(--hud-dock);
-  border-top: 1px solid var(--hud-border);
-  padding: 8px 12px max(10px, env(safe-area-inset-bottom));
+}
+
+.np-txt { min-width: 0; flex: 1; }
+.np-txt b { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-txt small { display: block; font-size: 11px; color: #94A3B8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.ctl-inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.hud-dock-status {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 46px;
-}
-
-.hud-clock {
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.05;
-  font-variant-numeric: tabular-nums;
-}
-
-.hud-batt {
-  font-size: 11px;
-  color: var(--hud-muted);
-  font-weight: 600;
-}
-
-.hud-dock-apps {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  flex: 1;
-}
-
-.hud-dock-end {
-  display: flex;
-  align-items: center;
+  justify-content: space-around;
   gap: 6px;
 }
 
-.ride-hud[data-hud="night"] .chip,
-.ride-hud[data-hud="night"] .btn:not(.btn-primary):not(.btn-ok),
-.ride-hud[data-hud="night"] .stat-tile {
-  background: var(--hud-card-soft);
-  border-color: var(--hud-border);
-  color: #F8FAFC;
-}
-
-.hud-dock-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+.mbtn {
+  width: 30px;
+  height: 30px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
   border: 0;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-weight: 700;
-  font-size: 17px;
   cursor: pointer;
   flex: none;
-  transition: transform 0.14s ease;
+}
+.mbtn.play { width: 36px; height: 36px; background: #fff; color: #080A0F; }
+.mbtn svg { width: 52%; height: 52%; fill: currentColor; }
+
+.spd-card {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 4px;
 }
 
-.hud-dock-btn:active { transform: scale(0.92); }
-.hud-dock-btn svg {
-  width: 22px;
-  height: 22px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2.1;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.spd-val {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
 }
 
-.hud-dock-btn.active {
-  box-shadow: 0 0 0 2px var(--hud-dock), 0 0 0 4.5px #0284C7;
+.spd-unit { font-size: 12px; color: #94A3B8; font-weight: 600; }
+.spd-head { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.spd-trip { font-size: 11px; color: #94A3B8; white-space: nowrap; }
+
+/* Full App Screens inside Dashboard */
+.dash-screen {
+  display: none;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 18px;
+  background: #141923;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 16px;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  overflow-y: auto;
 }
 
-.hud-dock-home {
-  background: var(--hud-card-soft);
-  color: inherit;
+.dash-main[data-view="music"] .dash-screen[data-screen="music"],
+.dash-main[data-view="trip"] .dash-screen[data-screen="trip"],
+.dash-main[data-view="ext"] .dash-screen[data-screen="ext"] {
+  display: flex;
 }
 
-.hud-dock-home.active {
-  background: #0284C7;
+.bar { width: 100%; height: 6px; background: rgba(255, 255, 255, 0.15); border-radius: 99px; overflow: hidden; cursor: pointer; }
+.bar span { display: block; height: 100%; width: 0%; background: #38BDF8; border-radius: 99px; }
+
+.center-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+}
+
+.ext-badge {
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  font-size: 34px;
+  font-weight: 700;
   color: #fff;
-  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.hud-dock-exit {
-  background: #FEE2E2;
-  color: #DC2626;
+.trip-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 420px;
 }
 
-.ride-hud[data-hud="night"] .hud-dock-exit {
-  background: rgba(239, 68, 68, 0.22);
-  color: #FCA5A5;
+.trip-stat-box {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 8px 6px;
+}
+.trip-stat-box b { display: block; font-size: 18px; }
+.trip-stat-box small { font-size: 11px; color: #94A3B8; }
+
+.ovl {
+  position: absolute;
+  inset: 0;
+  z-index: 900;
+  background: rgba(5, 7, 11, 0.86);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
 }
 
-/* ===== Landscape Layout (Horizontal Mount / Zontes Mirror) ===== */
-@media (orientation: landscape) and (min-width: 560px) {
-  .ride-hud {
-    flex-direction: row;
-  }
+/* ============================================================
+   AUTO-RESOLUTION CONTAINER BREAKPOINTS
+   Ensures crystal-clear layout on 340px mobile preview AND 800x480 bike screen!
+   ============================================================ */
 
-  .hud-dock {
-    order: -1;
-    width: 78px;
-    flex-direction: column;
-    border-top: 0;
-    border-right: 1px solid var(--hud-border);
-    padding: 10px 8px;
-  }
+/* Compact Mobile Preview (<= 520px wide) */
+@container dash (max-width: 520px) {
+  .dock { width: 46px; padding: 6px 4px; gap: 5px; }
+  .sb b { font-size: 11px; }
+  .sig { display: none; }
+  .dock-apps { gap: 4px; }
+  .di { width: 28px; height: 28px; border-radius: 8px; font-size: 12px; }
+  .dash-main { padding: 6px; gap: 6px; }
+  .map-slot { border-radius: 12px; flex: 1.45; }
+  .turn { left: 6px; top: 6px; padding: 5px 8px; gap: 6px; border-radius: 10px; }
+  .turn svg { width: 16px; height: 16px; }
+  .turn b { font-size: 11.5px; }
+  .turn small { font-size: 9px; max-width: 110px; }
+  .safe-badge { right: 6px; top: 6px; padding: 3px 8px; font-size: 9.5px; }
+  .spdpill { left: 6px; bottom: 6px; padding: 4px 8px; border-radius: 10px; }
+  .spdpill strong { font-size: 18px; }
+  .spdpill span { font-size: 9px; }
+  .map-right-pills { right: 6px; bottom: 6px; gap: 4px; }
+  .prov-pill { padding: 3px 7px; font-size: 9px; }
+  .map-mini-btn { width: 22px; height: 22px; font-size: 10px; }
 
-  .hud-dock-apps,
-  .hud-dock-end {
-    flex-direction: column;
-  }
+  .dash-col { gap: 6px; }
+  .dash-card { border-radius: 12px; padding: 7px 8px; }
+  .art { width: 24px; height: 24px; border-radius: 7px; font-size: 12px; }
+  .np-row { gap: 6px; }
+  .np-txt b { font-size: 10.5px; }
+  .np-txt small { font-size: 9px; }
+  .mbtn { width: 22px; height: 22px; }
+  .mbtn.play { width: 26px; height: 26px; }
 
-  .hud-body {
-    flex-direction: row;
-    padding: 10px;
-    gap: 10px;
-  }
+  .spd-val { font-size: 24px; }
+  .spd-unit { font-size: 9.5px; }
+  .spd-head { font-size: 10px; }
+  .spd-trip { font-size: 9px; }
 
-  .hud-map-wrap {
-    flex: 1.55;
-  }
+  .dash-screen { padding: 10px; border-radius: 12px; gap: 6px; }
+  .ext-badge { width: 44px; height: 44px; border-radius: 12px; font-size: 22px; }
+  .trip-stat-box b { font-size: 13px; }
+  .trip-stat-box small { font-size: 9px; }
+}
 
-  .hud-strip {
-    flex: 1;
-    max-width: 310px;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .hud-tile {
-    flex: 1;
-  }
-
-  .ride-hud[data-safe="true"] .hud-strip {
-    display: none;
-  }
-
-  .hud-speed-val {
-    font-size: 46px;
-  }
-
-  .hud-dial-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+/* Large / Zontes 800x480 VirtualDisplay & Fullscreen Mirror (>= 740px wide) */
+@container dash (min-width: 740px) {
+  .dock { width: 88px; padding: 14px 8px; gap: 12px; }
+  .sb b { font-size: 20px; }
+  .di { width: 56px; height: 56px; border-radius: 16px; font-size: 24px; }
+  .dash-main { padding: 14px; gap: 14px; }
+  .turn { padding: 12px 18px; border-radius: 18px; }
+  .turn svg { width: 34px; height: 34px; }
+  .turn b { font-size: 24px; }
+  .turn small { font-size: 14px; max-width: 340px; }
+  .spdpill strong { font-size: 42px; }
+  .spdpill span { font-size: 15px; }
+  .dash-card { padding: 16px 18px; border-radius: 22px; }
+  .art { width: 54px; height: 54px; border-radius: 14px; font-size: 24px; }
+  .np-txt b { font-size: 19px; }
+  .np-txt small { font-size: 14px; }
+  .mbtn { width: 40px; height: 40px; }
+  .mbtn.play { width: 48px; height: 48px; }
+  .spd-val { font-size: 58px; }
+  .spd-unit { font-size: 16px; }
+  .spd-head { font-size: 17px; }
+  .spd-trip { font-size: 14px; }
 }

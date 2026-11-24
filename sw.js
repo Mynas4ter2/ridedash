@@ -1,20 +1,21 @@
-const CACHE_NAME = 'ridedash-v7';
+const CACHE_NAME = 'ridedash-v8';
 const APP_SHELL = [
   './',
   './index.html',
+  './display.html',
   './manifest.json',
   './icons/icon.svg',
   './css/tokens.css',
   './css/companion.css',
   './css/dash.css',
   './js/store.js',
-  './js/nav.js',
+  './js/bridge.js',
   './js/gps.js',
-  './js/weather.js',
   './js/map.js',
   './js/media.js',
   './js/trip.js',
   './js/fuel.js',
+  './js/qr.js',
   './js/dash.js',
   './js/app.js'
 ];

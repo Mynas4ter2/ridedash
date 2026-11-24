@@ -1,54 +1,88 @@
 import {
   state,
   APPS,
-  MAP_STYLES,
+  PROV,
+  RATIOS,
+  RES,
+  MODES,
+  ACTS,
   loadState,
   persistState,
   subscribe,
   notify,
   isSafeActive,
+  visibleDock,
+  effectiveResolution,
   svgIcon,
   esc
 } from './store.js';
-import { initGps, setGpsMode, setSimSpeed, toggleRouteSim } from './gps.js';
-import { refreshWeather } from './weather.js';
-import {
-  initMap,
-  mountMapInto,
-  applyMapStyle,
-  invalidateMap,
-  recenterMap,
-  drawActiveRoute,
-  clearRouteLayers,
-  openInGoogleMaps
-} from './map.js';
-import {
-  searchPlaces,
-  calculateRoute,
-  startGuidance,
-  stopNavigation,
-  speakThai,
-  toggleVoice
-} from './nav.js';
+import { initGps, setGpsMode, setSimSpeed } from './gps.js';
+import { initMap, applyMapTheme, invalidateMap } from './map.js';
 import { initMedia } from './media.js';
 import { initTrip, renderTripTab } from './trip.js';
-import { initFuel, renderFuel } from './fuel.js';
+import { initFuel } from './fuel.js';
+import { initQrModal, openQrModal } from './qr.js';
+import {
+  initBridge,
+  requestScanQr,
+  connectBike,
+  disconnectBike,
+  syncStreamConfig,
+  setBridgeHandlers,
+  isNativeAndroid
+} from './bridge.js';
 import {
   initDash,
-  openHudScreen,
-  applyHudTheme,
-  renderHudLayout,
-  renderHudTelemetry,
-  renderHudNav,
+  openScreen,
+  goFocus,
+  okFocus,
+  backHome,
+  fitDisplay,
+  renderDashLayout,
+  renderTelemetry,
   renderMediaUi,
-  renderMediaProgress,
-  renderWeatherUi,
-  renderHudPhoneGrid
+  renderMediaProgress
 } from './dash.js';
 
 const $ = (id) => document.getElementById(id);
 let wakeLock = null;
-let deferredInstallPrompt = null;
+
+const BTN = [
+  ['L', 'ซ้าย', 'bL'],
+  ['R', 'ขวา', 'bR'],
+  ['O', 'OK', 'bOk'],
+  ['B', 'กลับ', 'bBack']
+];
+
+function aname(v) {
+  const f = ACTS.find((a) => a[0] === v);
+  return f ? f[1] : v;
+}
+
+function toast(msg) {
+  if ($('toast')) $('toast').textContent = msg;
+}
+
+function runAction(a) {
+  const v = visibleDock();
+  if (a === 'left') goFocus(-1);
+  else if (a === 'right') goFocus(1);
+  else if (a === 'open') okFocus();
+  else if (a === 'back') backHome();
+  else if (a === 'map' || a === 'music') {
+    if (!v.includes(a)) {
+      toast(`ไม่มี ${APPS[a].n} ในทางลัดตอนนี้`);
+      return;
+    }
+    openScreen(a);
+  } else if (a === 'mode') {
+    state.mode = state.mode === 'contain' ? 'cover' : state.mode === 'cover' ? 'fill' : 'contain';
+    persistState();
+    syncStreamConfig();
+    renderDisplayTab();
+    fitDisplay();
+  }
+}
 
 function applyTheme() {
   document.documentElement.setAttribute('data-theme', state.theme);
@@ -59,560 +93,408 @@ function applyTheme() {
     btn.textContent = state.theme === 'dark' ? '☀️' : '🌙';
     btn.title = state.theme === 'dark' ? 'สลับเป็นโหมดสว่าง' : 'สลับเป็นโหมดมืด';
   }
+  applyMapTheme();
 }
 
-function renderFavorites() {
-  const f = state.favorites || {};
-  const hb = $('favHomeBtn');
-  const wb = $('favWorkBtn');
-  if (hb) {
-    hb.classList.toggle('unset', !f.home);
-    if ($('favHomeSub')) $('favHomeSub').textContent = f.home ? f.home.name : 'แตะเพื่อตั้งค่า';
-  }
-  if (wb) {
-    wb.classList.toggle('unset', !f.work);
-    if ($('favWorkSub')) $('favWorkSub').textContent = f.work ? f.work.name : 'แตะเพื่อตั้งค่า';
-  }
-}
-
-function ensureAutoTrip() {
-  if (state.autoTripOnNav && !state.trip.on) {
-    state.trip = { on: true, paused: false, seconds: 0, distanceKm: 0, maxSpeed: state.speed };
-    notify('trip');
-  }
-}
-
-function showTab(idx) {
-  state.activeTab = idx;
-  document.querySelectorAll('.tab-view[data-tab]').forEach((el) => {
-    el.hidden = el.dataset.tab !== String(idx);
+function chips(id, list, isOn, onSelect) {
+  const el = $(id);
+  if (!el) return;
+  el.innerHTML = list.map(([val, label]) =>
+    `<button class="chip" type="button" aria-pressed="${isOn(val)}" data-v="${esc(val)}">${esc(label)}</button>`
+  ).join('');
+  el.querySelectorAll('[data-v]').forEach((b) => {
+    b.onclick = () => onSelect(b.dataset.v);
   });
-  document.querySelectorAll('.bottom-nav .nav-item[data-nav]').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.nav === String(idx));
-  });
-
-  if (idx === 1 && !state.rideMode) {
-    mountMapInto('mapTabStage');
-    applyMapStyle(state.mapStyle);
-    invalidateMap();
-  }
-  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function showTripSubTab(sub) {
-  state.tripSubTab = sub;
-  if ($('subTripBtn')) $('subTripBtn').setAttribute('aria-pressed', String(sub === 'trip'));
-  if ($('subFuelBtn')) $('subFuelBtn').setAttribute('aria-pressed', String(sub === 'fuel'));
-  if ($('tripSubPane')) $('tripSubPane').hidden = sub !== 'trip';
-  if ($('fuelSubPane')) $('fuelSubPane').hidden = sub !== 'fuel';
-}
-
-async function setRideMode(on) {
-  state.rideMode = on;
-  document.body.classList.toggle('ride-mode', on);
-
-  if (on) {
-    mountMapInto('hudMapWrap');
-    applyHudTheme();
-    renderHudLayout();
-    try { if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen().catch(() => {}); } catch (e) {}
-    try { if (navigator.wakeLock?.request) wakeLock = await navigator.wakeLock.request('screen').catch(() => null); } catch (e) {}
-    recenterMap(16);
-  } else {
-    try { if (wakeLock) { await wakeLock.release(); wakeLock = null; } } catch (e) {}
-    try { if (document.fullscreenElement) await document.exitFullscreen(); } catch (e) {}
-    if (state.activeTab === 1) {
-      mountMapInto('mapTabStage');
-      applyMapStyle(state.mapStyle);
-    }
-    invalidateMap();
-  }
-  renderSettingsUi();
-}
-
-// ===== Place Search & Route Preview =====
-async function runPlaceSearch(query) {
-  const q = String(query || '').trim();
-  if (!q) return;
-
-  showTab(1);
-  if ($('mapSearchInput')) $('mapSearchInput').value = q;
-  const box = $('mapResultsBox');
-  if (!box) return;
-  box.hidden = false;
-  box.innerHTML = '<div class="map-res-item" style="color:var(--muted)">กำลังค้นหาสถานที่ใกล้คุณ...</div>';
-
-  try {
-    const items = await searchPlaces(q);
-    if (!items.length) {
-      box.innerHTML = '<div class="map-res-item" style="color:var(--muted)">ไม่พบสถานที่นี้ ลองใช้คำค้นอื่น</div>';
-      return;
-    }
-
-    box.innerHTML = items.map((it, i) => `
-      <button class="map-res-item" type="button" data-pidx="${i}">
-        <b>${esc(it.shortName)}</b> <span style="color:var(--acc);font-size:12px;font-weight:700">${it.distKm.toFixed(1)} กม.</span>
-        ${it.subName ? `<div style="font-size:12px;color:var(--muted)">${esc(it.subName)}</div>` : ''}
-      </button>
-    `).join('');
-
-    box.querySelectorAll('[data-pidx]').forEach((btn) => {
-      btn.onclick = async () => {
-        const picked = items[Number(btn.dataset.pidx)];
-        if (!picked) return;
-        box.hidden = true;
-        try {
-          await calculateRoute(picked.lat, picked.lng, picked.shortName, { autoStart: false });
-        } catch (err) {
-          alert('ไม่สามารถคำนวณเส้นทางได้ในขณะนี้ ลองเปิดใน Google Maps แทนได้ครับ');
-        }
-      };
-    });
-  } catch (err) {
-    box.innerHTML = '<div class="map-res-item" style="color:var(--danger)">ค้นหาไม่สำเร็จ (ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต)</div>';
-  }
-}
-
-function renderRouteSheet() {
-  const sheet = $('routeSheet');
-  if (!sheet) return;
-  const n = state.nav;
-  if (n.phase === 'idle') {
-    sheet.hidden = true;
-    return;
-  }
-
-  sheet.hidden = false;
-  if ($('routeSheetTitle')) $('routeSheetTitle').textContent = n.destName || 'เส้นทางนำทาง';
-  if ($('routeSheetMeta')) {
-    $('routeSheetMeta').textContent = n.totalDistKm > 0
-      ? `${n.totalDistKm.toFixed(1)} กม. · ${n.totalDurMin} นาที · ถึง ${n.etaText}`
-      : 'กำลังคำนวณเส้นทาง...';
-  }
-  if ($('routeSimBtn')) {
-    $('routeSimBtn').hidden = state.gpsMode !== 'sim';
-    $('routeSimBtn').textContent = state.routeSimActive ? '⏹ หยุดจำลอง' : '🧪 จำลองขี่';
-  }
-}
-
-// ===== Home Quick Dial Strip =====
-function renderHomeQuickDial() {
-  const row = $('homeQuickDial');
-  if (!row) return;
-  row.innerHTML = state.contacts.map((c) => `
-    <a class="quick-dial-pill" href="tel:${esc(c.tel)}">
-      <span class="call-ico">☎</span>
-      <span>${esc(c.name)}</span>
-    </a>
-  `).join('');
-}
-
-// ===== Settings UI =====
-function renderDockSettings() {
-  const mine = $('dockMineList');
-  const all = $('dockAllList');
+function renderAppsTab() {
+  const mine = $('mine');
+  const all = $('all');
   if (!mine || !all) return;
 
-  const badge = (a) => {
-    const inner = a.icon ? svgIcon(a.icon, 18) : esc(a.letter || a.name[0]);
-    return `<span class="app-badge" style="background:linear-gradient(145deg,${a.grad[0]},${a.grad[1]})">${inner}</span>`;
-  };
+  const ic = (a) => `<span class="app-badge" style="background:linear-gradient(155deg,${a.grad[0]},${a.grad[1]})">${a.p ? svgIcon(a.p, 19) : esc(a.l)}</span>`;
 
   mine.innerHTML = state.dock.map((id, i) => {
     const a = APPS[id];
     return `<li class="list-item">
-      ${badge(a)}
-      <span class="nm">${esc(a.name)}</span>
-      <button class="icon-btn" data-mv="${i}" data-dir="-1" ${i === 0 ? 'disabled' : ''} aria-label="ขึ้น">▲</button>
-      <button class="icon-btn" data-mv="${i}" data-dir="1" ${i === state.dock.length - 1 ? 'disabled' : ''} aria-label="ลง">▼</button>
-      <button class="icon-btn" data-rm="${id}" aria-label="ลบ">✕</button>
+      ${ic(a)}
+      <span class="nm">${esc(a.n)}</span>
+      <button class="icon-btn" data-m="${i}" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="เลื่อนขึ้น">▲</button>
+      <button class="icon-btn" data-m="${i}" data-d="1" ${i === state.dock.length - 1 ? 'disabled' : ''} aria-label="เลื่อนลง">▼</button>
+      <button class="icon-btn" data-r="${id}" aria-label="เอาออก">✕</button>
     </li>`;
   }).join('');
 
-  if ($('dockCount')) $('dockCount').textContent = `${state.dock.length}/4`;
-  if ($('addAppBtn')) $('addAppBtn').disabled = state.dock.length >= 4;
-  if (state.dock.length >= 4 && $('appPicker')) $('appPicker').hidden = true;
+  if ($('cnt')) $('cnt').textContent = `${state.dock.length}/4`;
+  if ($('addBtn')) $('addBtn').disabled = state.dock.length >= 4;
+  if (state.dock.length >= 4 && $('picker')) $('picker').hidden = true;
 
-  const avail = Object.keys(APPS).filter((id) => !state.dock.includes(id));
-  all.innerHTML = avail.map((id) => {
-    const a = APPS[id];
-    return `<li class="list-item">
-      ${badge(a)}
-      <span class="nm">${esc(a.name)}</span>
-      <button class="btn btn-sm btn-primary" data-add="${id}" type="button">+ เพิ่ม</button>
-    </li>`;
-  }).join('');
+  const q = ($('q')?.value || '').trim().toLowerCase();
+  const avail = Object.keys(APPS).filter((k) => !state.dock.includes(k) && (!q || APPS[k].n.toLowerCase().includes(q)));
+  all.innerHTML = avail.length
+    ? avail.map((k) => {
+        const a = APPS[k];
+        return `<li class="list-item">${ic(a)}<span class="nm">${esc(a.n)}</span><button class="btn btn-sm btn-primary" data-a="${k}" type="button">+ เพิ่ม</button></li>`;
+      }).join('')
+    : '<li class="list-item"><span class="nm"><small>ไม่พบแอป</small></span></li>';
 }
 
-function renderContactsSettings() {
-  const ul = $('contactList');
-  if (!ul) return;
-  ul.innerHTML = state.contacts.map((c, i) => `
-    <li class="list-item">
-      <div class="nm">${esc(c.name)}<small>${esc(c.tel)}</small></div>
-      <button class="icon-btn" data-cdel="${i}" aria-label="ลบ">✕</button>
-    </li>`).join('');
+function renderDisplayTab() {
+  chips('prov', PROV.map((x) => [x, x]), (v) => v === state.prov, (v) => {
+    state.prov = v;
+    persistState();
+    syncStreamConfig();
+    renderDisplayTab();
+    renderDashLayout();
+  });
 
-  ul.querySelectorAll('[data-cdel]').forEach((btn) => {
-    btn.onclick = () => {
-      state.contacts.splice(Number(btn.dataset.cdel), 1);
-      persistState();
-      renderContactsSettings();
-      renderHomeQuickDial();
-      renderHudPhoneGrid();
-    };
+  chips('ratio', RATIOS.map((r) => [r[0], r[0] === 'Auto' ? 'อัตโนมัติ (Auto)' : r[0]]), (v) => v === state.rname, (v) => {
+    state.rname = v;
+    state.res = RES[v][0];
+    const found = RATIOS.find((r) => r[0] === v);
+    state.ratio = found && found[1] ? found[1] : 5 / 3;
+    if ($('deviceRatioBadge')) $('deviceRatioBadge').textContent = v === 'Auto' ? 'Auto Display' : `${v} Display`;
+    persistState();
+    syncStreamConfig();
+    renderDisplayTab();
+    fitDisplay();
+    renderDiag();
+  });
+
+  chips('res', (RES[state.rname] || RES['5:3']).map((x) => [x, x === 'Auto' ? `อัตโนมัติ (${effectiveResolution().text})` : x]), (v) => v === state.res, (v) => {
+    state.res = v;
+    persistState();
+    syncStreamConfig();
+    renderDisplayTab();
+    fitDisplay();
+    renderDiag();
+  });
+
+  chips('mode', MODES, (v) => v === state.mode, (v) => {
+    state.mode = v;
+    persistState();
+    syncStreamConfig();
+    renderDisplayTab();
+    fitDisplay();
   });
 }
 
-function renderSettingsUi() {
-  const isReal = state.gpsMode === 'gps';
+function renderSafeSection() {
+  if ($('safeOn')) $('safeOn').setAttribute('aria-pressed', String(state.safeOn));
+  if ($('safeOff')) $('safeOff').setAttribute('aria-pressed', String(!state.safeOn));
 
-  // Header GPS Pill
-  const hPill = $('gpsHeaderPill');
-  if (hPill) {
-    hPill.className = 'status-pill ' + (isReal ? 'gps-real' : 'gps-sim');
-    if ($('gpsHeaderText')) $('gpsHeaderText').textContent = isReal ? 'GPS จริง' : 'โหมดจำลอง';
-  }
-
-  if ($('autoTripChk')) $('autoTripChk').checked = !!state.autoTripOnNav;
-
-  // Settings GPS controls
-  if ($('gpsModeReal')) $('gpsModeReal').setAttribute('aria-pressed', String(isReal));
-  if ($('gpsModeSim')) $('gpsModeSim').setAttribute('aria-pressed', String(!isReal));
-  if ($('simSpeedField')) $('simSpeedField').hidden = isReal;
-  if ($('gpsBanner')) {
-    $('gpsBanner').textContent = state.gpsStatus;
-    $('gpsBanner').className = 'status-banner ' + (isReal ? 'ok' : 'warn');
-  }
-  if ($('spdVal')) $('spdVal').textContent = state.simSpeed;
-  if ($('spdSlider') && document.activeElement !== $('spdSlider')) $('spdSlider').value = state.simSpeed;
-
-  // Voice button
-  if ($('voiceToggleBtn')) {
-    $('voiceToggleBtn').textContent = state.voiceEnabled ? '🔊 เสียงนำทางไทย: เปิด' : '🔇 เสียงนำทางไทย: ปิด';
-  }
-
-  // Safe mode
-  if ($('safeOnBtn')) $('safeOnBtn').setAttribute('aria-pressed', String(state.safeOn));
-  if ($('safeOffBtn')) $('safeOffBtn').setAttribute('aria-pressed', String(!state.safeOn));
-  if ($('safeBanner')) {
+  const st = $('safeStatus');
+  if (st) {
     if (!state.safeOn) {
-      $('safeBanner').textContent = 'ปิดโหมดปลอดภัยอยู่';
-      $('safeBanner').className = 'status-banner';
+      st.textContent = 'สถานะ: ปิด';
+      st.className = 'status-banner';
     } else if (isSafeActive()) {
-      $('safeBanner').textContent = `กำลังทำงาน · ${state.speed} ≥ ${state.safeLimit} km/h`;
-      $('safeBanner').className = 'status-banner warn';
+      st.textContent = `สถานะ: ทำงานอยู่ · ${state.speed} ≥ ${state.limit} km/h`;
+      st.className = 'status-banner warn';
     } else {
-      $('safeBanner').textContent = `ทำงานอัตโนมัติเมื่อถึง ${state.safeLimit} km/h`;
-      $('safeBanner').className = 'status-banner acc';
+      st.textContent = `สถานะ: เปิด · จะทำงานเมื่อถึง ${state.limit} km/h (ตอนนี้ ${state.speed})`;
+      st.className = 'status-banner acc';
     }
   }
 
-  const limRow = $('safeLimitRow');
-  if (limRow) {
-    limRow.innerHTML = [40, 60, 80, 100].map((v) =>
-      `<button class="chip" type="button" aria-pressed="${state.safeLimit === v}" data-lim="${v}">${v} km/h</button>`
-    ).join('');
-    limRow.querySelectorAll('[data-lim]').forEach((b) => {
-      b.onclick = () => {
-        state.safeLimit = Number(b.dataset.lim);
-        persistState();
-        renderSettingsUi();
-        renderHudLayout();
-      };
-    });
+  if ($('spv')) $('spv').textContent = state.speed;
+  if ($('spd') && document.activeElement !== $('spd')) $('spd').value = state.speed;
+
+  const isRealGps = state.gpsMode === 'gps' || state.gpsMode === 'native';
+  if ($('gpsToggleBtn')) {
+    $('gpsToggleBtn').textContent = isRealGps ? 'ใช้ GPS จริงอยู่ (สลับเป็นจำลอง)' : 'สลับใช้ GPS จริง';
+    $('gpsToggleBtn').setAttribute('aria-pressed', String(isRealGps));
   }
 
-  // Theme & Map Style chips
-  const mapRow = $('mapStyleRow');
-  if (mapRow) {
-    mapRow.innerHTML = MAP_STYLES.map((s) =>
-      `<button class="chip" type="button" aria-pressed="${state.mapStyle === s.id}" data-ms="${s.id}">${s.label}</button>`
-    ).join('');
-    mapRow.querySelectorAll('[data-ms]').forEach((b) => {
-      b.onclick = () => {
-        state.mapStyle = b.dataset.ms;
-        persistState();
-        applyMapStyle(state.mapStyle);
-        renderSettingsUi();
-      };
-    });
-  }
+  chips('lim', [40, 60, 80, 100].map((x) => [String(x), `${x} km/h`]), (v) => Number(v) === state.limit, (v) => {
+    state.limit = Number(v);
+    persistState();
+    syncStreamConfig();
+    renderSafeSection();
+    renderDashLayout();
+  });
 
-  const themeRow = $('themeRow');
-  if (themeRow) {
-    themeRow.innerHTML = [['dark', 'โหมดมืด (แนะนำ)'], ['light', 'โหมดสว่าง (ครีมอุ่น)']].map(([id, label]) =>
-      `<button class="chip" type="button" aria-pressed="${state.theme === id}" data-th="${id}">${label}</button>`
-    ).join('');
-    themeRow.querySelectorAll('[data-th]').forEach((b) => {
-      b.onclick = () => {
-        state.theme = b.dataset.th;
-        persistState();
-        applyTheme();
-        renderSettingsUi();
-      };
-    });
+  if ($('safeMsg')) {
+    $('safeMsg').textContent = !state.safeOn
+      ? 'โหมดปลอดภัยปิดอยู่'
+      : isSafeActive()
+        ? 'ซ่อนทางลัดที่ไม่จำเป็น · ขยายแผนที่และมาตรวัดความเร็ว'
+        : `จะทำงานอัตโนมัติเมื่อความเร็วถึง ${state.limit} km/h`;
   }
+}
 
-  const hudRow = $('hudThemeRow');
-  if (hudRow) {
-    hudRow.innerHTML = [['night', '🌙 กลางคืน (ตัดแสง)'], ['day', '☀️ กลางวัน (สว่าง)']].map(([id, label]) =>
-      `<button class="chip" type="button" aria-pressed="${state.hudTheme === id}" data-ht="${id}">${label}</button>`
-    ).join('');
-    hudRow.querySelectorAll('[data-ht]').forEach((b) => {
-      b.onclick = () => {
-        state.hudTheme = b.dataset.ht;
-        persistState();
-        applyHudTheme();
-        renderSettingsUi();
-      };
-    });
+function renderDiag() {
+  const dg = $('diag');
+  if (!dg) return;
+
+  const res = effectiveResolution();
+  let d;
+  if (state.nativeDiag) {
+    d = {
+      fps: state.nativeDiag.fps,
+      lat: state.nativeDiag.lat,
+      tmp: state.nativeDiag.tmp,
+      br: state.nativeDiag.br,
+      conn: state.recon ? 'กำลังต่อใหม่' : (state.conn.status === 'streaming' ? 'เชื่อมต่อแล้ว (Native)' : state.conn.message)
+    };
+  } else {
+    const fpsBase = state.hot ? 20 : 30;
+    d = {
+      fps: Math.round(fpsBase + (state.hot ? 0 : (Math.random() - 0.5) * 2)),
+      lat: Math.round(state.hot ? 140 + Math.random() * 25 : 58 + Math.random() * 22),
+      tmp: state.hot ? 44 : 38,
+      br: ((res.w * res.h * fpsBase * 0.08) / 1e6).toFixed(1),
+      conn: state.recon ? 'กำลังต่อใหม่' : (state.conn.status === 'streaming' ? 'เชื่อมต่อแล้ว' : 'โหมดทดสอบ')
+    };
   }
+  state.lastDiag = d;
+
+  const items = [
+    ['FPS', d.fps],
+    ['ความหน่วง', `${d.lat} ms`],
+    ['อุณหภูมิเครื่อง', `${d.tmp} °C`],
+    ['บิตเรต (ประมาณ)', `${d.br} Mbps`],
+    ['การเชื่อมต่อ', d.conn],
+    ['ต่อใหม่แล้ว', `${state.rc} ครั้ง`]
+  ];
+  dg.innerHTML = items.map(([k, v]) => `<div class="stat-tile"><small>${k}</small><b>${v}</b></div>`).join('');
+
+  if (!state.logMsg && $('dmsg')) {
+    $('dmsg').textContent = state.nativeDiag
+      ? 'กำลังแสดงค่าจริงจาก Android Native Bridge'
+      : (state.hot ? 'เครื่องร้อน: ลดเฟรมเรตเหลือ 20 FPS อัตโนมัติ' : 'ค่าจำลองสำหรับทดสอบ (จะเปลี่ยนเป็นค่าจริงอัตโนมัติเมื่อต่อผ่าน Android Bridge)');
+  }
+}
+
+function renderConnStatus() {
+  const pill = $('connPill');
+  const txt = $('connPillText');
+  if (!pill || !txt) return;
+
+  const s = state.conn.status;
+  if (s === 'streaming') {
+    pill.className = 'status-pill conn-ok';
+    txt.textContent = isNativeAndroid() ? 'กำลังส่งภาพ' : 'เชื่อมต่อแล้ว';
+  } else if (s === 'connecting' || s === 'scanning' || s === 'reconnecting') {
+    pill.className = 'status-pill conn-warn';
+    txt.textContent = s === 'reconnecting' ? 'กำลังต่อใหม่...' : 'กำลังเชื่อมต่อ...';
+  } else {
+    pill.className = 'status-pill';
+    txt.textContent = isNativeAndroid() ? 'รอเชื่อมรถ' : 'Demo Mode';
+  }
+}
+
+function renderFocusCap() {
+  const v = visibleDock();
+  const a = state.screen === 'home' ? APPS[v[state.foc]] : APPS[state.screen];
+  if ($('fcap')) $('fcap').textContent = a ? `· ${state.screen === 'home' ? 'โฟกัส' : 'เปิดอยู่'}: ${a.n}` : '';
+}
+
+async function setMirror(on) {
+  state.mirrorMode = on;
+  document.body.classList.toggle('mirror-mode', on);
+  if (on) {
+    try { if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen().catch(() => {}); } catch (e) {}
+    try { if (screen.orientation?.lock) await screen.orientation.lock('landscape').catch(() => {}); } catch (e) {}
+    try { if (navigator.wakeLock?.request) wakeLock = await navigator.wakeLock.request('screen').catch(() => null); } catch (e) {}
+  } else {
+    try { if (wakeLock) { await wakeLock.release(); wakeLock = null; } } catch (e) {}
+    try { if (screen.orientation?.unlock) screen.orientation.unlock(); } catch (e) {}
+    try { if (document.fullscreenElement) await document.exitFullscreen(); } catch (e) {}
+  }
+  setTimeout(() => { fitDisplay(); invalidateMap(); }, 100);
+}
+
+function showTab(n) {
+  document.querySelectorAll('[data-tab]').forEach((el) => {
+    el.hidden = el.dataset.tab !== String(n);
+  });
+  document.querySelectorAll('.bank-nav button[data-nav]').forEach((b) => {
+    b.classList.toggle('active', b.dataset.nav === String(n));
+  });
 }
 
 function bindEvents() {
-  // Top-right Light/Dark Theme toggle button
+  // Bottom Nav
+  document.querySelectorAll('.bank-nav button[data-nav]').forEach((btn) => {
+    btn.onclick = () => {
+      showTab(Number(btn.dataset.nav));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+  });
+
+  // Center QR Scan button
+  if ($('scanBtn')) {
+    $('scanBtn').onclick = () => {
+      if (!requestScanQr()) openQrModal();
+    };
+  }
+
+  // Header controls
   if ($('headerThemeBtn')) {
     $('headerThemeBtn').onclick = () => {
       state.theme = state.theme === 'dark' ? 'light' : 'dark';
-      state.hudTheme = state.theme === 'dark' ? 'night' : 'day';
-      if (state.mapStyle !== 'satellite') {
-        state.mapStyle = state.theme === 'dark' ? 'dark' : 'light';
-        applyMapStyle(state.mapStyle);
-      }
       persistState();
       applyTheme();
-      applyHudTheme();
-      renderSettingsUi();
+    };
+  }
+  if ($('mirrorBtn')) $('mirrorBtn').onclick = () => setMirror(!state.mirrorMode);
+  if ($('mirrorExit')) $('mirrorExit').onclick = () => setMirror(false);
+  if ($('connPill')) {
+    $('connPill').onclick = () => {
+      if (state.conn.status === 'streaming') disconnectBike();
+      else if (!requestScanQr()) openQrModal();
     };
   }
 
-  // Favorite Places (Home / Work)
-  const triggerFav = async (key, label) => {
-    const saved = state.favorites?.[key];
-    if (saved) {
-      showTab(1);
-      try {
-        await calculateRoute(saved.lat, saved.lng, saved.name, { autoStart: false });
-      } catch (e) {
-        alert('ไม่สามารถคำนวณเส้นทางได้ในขณะนี้');
+  // Handlebar pad (short press + 600ms long press)
+  BTN.forEach(([code, label, id]) => {
+    const el = $(id);
+    if (!el) return;
+    let timer = null;
+    let fired = false;
+    el.onpointerdown = () => {
+      fired = false;
+      timer = setTimeout(() => {
+        fired = true;
+        timer = null;
+        const a = state.map[code][1];
+        toast(`${label} กดค้าง → ${aname(a)}`);
+        runAction(a);
+      }, 600);
+    };
+    el.onpointerup = () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+        if (!fired) {
+          const a = state.map[code][0];
+          toast(`${label} กดสั้น → ${aname(a)}`);
+          runAction(a);
+        }
       }
-    } else {
-      showTab(1);
-      const inp = $('mapSearchInput');
-      if (inp) {
-        inp.value = '';
-        inp.placeholder = `ค้นหาตำแหน่ง "${label}" แล้วกด ⭐ ตั้งเป็น${label}`;
-        inp.focus();
+    };
+    el.onpointerleave = el.onpointercancel = () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+    };
+    el.oncontextmenu = (e) => e.preventDefault();
+    el.onclick = (e) => {
+      if (e.detail === 0) {
+        const a = state.map[code][0];
+        toast(`${label} → ${aname(a)}`);
+        runAction(a);
       }
+    };
+  });
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    const tg = e.target?.tagName;
+    if (tg === 'INPUT' || tg === 'SELECT' || tg === 'TEXTAREA') return;
+    if (e.key === 'ArrowLeft') goFocus(-1);
+    else if (e.key === 'ArrowRight') goFocus(1);
+    else if (e.key === 'Enter' && tg !== 'BUTTON') okFocus();
+    else if (e.key === 'Escape') {
+      if (state.mirrorMode && state.screen === 'home') setMirror(false);
+      else backHome();
     }
-  };
-  if ($('favHomeBtn')) $('favHomeBtn').onclick = () => triggerFav('home', 'บ้าน');
-  if ($('favWorkBtn')) $('favWorkBtn').onclick = () => triggerFav('work', 'ที่ทำงาน');
-
-  const saveCurrentDestAsFav = (key, label) => {
-    const n = state.nav;
-    if (n.destLat == null || n.destLng == null) return;
-    state.favorites[key] = { name: n.destName || label, lat: n.destLat, lng: n.destLng };
-    persistState();
-    renderFavorites();
-    const btn = $(key === 'home' ? 'saveFavHomeBtn' : 'saveFavWorkBtn');
-    if (btn) {
-      btn.textContent = `✓ บันทึก${label}แล้ว`;
-      setTimeout(() => { btn.textContent = `⭐ ตั้งเป็น${label}`; }, 1800);
-    }
-  };
-  if ($('saveFavHomeBtn')) $('saveFavHomeBtn').onclick = () => saveCurrentDestAsFav('home', 'บ้าน');
-  if ($('saveFavWorkBtn')) $('saveFavWorkBtn').onclick = () => saveCurrentDestAsFav('work', 'ที่ทำงาน');
-
-  // Auto-trip checkbox
-  if ($('autoTripChk')) {
-    $('autoTripChk').onchange = (e) => {
-      state.autoTripOnNav = !!e.target.checked;
-      persistState();
-    };
-  }
-
-  // PWA Install Prompt
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredInstallPrompt = e;
-    if ($('pwaInstallBtn')) $('pwaInstallBtn').hidden = false;
-  });
-  if ($('pwaInstallBtn')) {
-    $('pwaInstallBtn').onclick = async () => {
-      if (!deferredInstallPrompt) return;
-      deferredInstallPrompt.prompt();
-      await deferredInstallPrompt.userChoice.catch(() => {});
-      deferredInstallPrompt = null;
-      $('pwaInstallBtn').hidden = true;
-    };
-  }
-
-  // Bottom Navigation
-  document.querySelectorAll('.bottom-nav .nav-item[data-nav]').forEach((btn) => {
-    btn.onclick = () => showTab(Number(btn.dataset.nav));
   });
 
-  // Launch / Exit Ride Mode
-  if ($('navRideLaunch')) $('navRideLaunch').onclick = () => setRideMode(true);
-  if ($('heroStartRide')) $('heroStartRide').onclick = () => setRideMode(true);
-  if ($('hudExitBtn')) $('hudExitBtn').onclick = () => setRideMode(false);
-
-  // Home Search + Quick POI chips
-  if ($('homeSearchGo')) $('homeSearchGo').onclick = () => runPlaceSearch($('homeSearchInput')?.value);
-  if ($('homeSearchInput')) {
-    $('homeSearchInput').onkeydown = (e) => { if (e.key === 'Enter') runPlaceSearch(e.target.value); };
-  }
-  document.querySelectorAll('[data-poi]').forEach((btn) => {
-    btn.onclick = () => runPlaceSearch(btn.dataset.poi);
-  });
-
-  // Map Tab Search & Route Sheet Actions
-  if ($('mapSearchGo')) $('mapSearchGo').onclick = () => runPlaceSearch($('mapSearchInput')?.value);
-  if ($('mapSearchInput')) {
-    $('mapSearchInput').onkeydown = (e) => { if (e.key === 'Enter') runPlaceSearch(e.target.value); };
-  }
-  if ($('mapRecenterBtn')) $('mapRecenterBtn').onclick = () => recenterMap(16);
-
-  if ($('routeStartBtn')) {
-    $('routeStartBtn').onclick = () => {
-      ensureAutoTrip();
-      startGuidance();
-      openHudScreen('home');
-      setRideMode(true);
+  // Dock shortcuts management
+  if ($('addBtn')) {
+    $('addBtn').onclick = () => {
+      const p = $('picker');
+      p.hidden = !p.hidden;
+      if (!p.hidden) $('q')?.focus();
     };
   }
-  if ($('routeSimBtn')) {
-    $('routeSimBtn').onclick = () => {
-      if (state.routeSimActive) {
-        toggleRouteSim(false);
-      } else {
-        ensureAutoTrip();
-        startGuidance();
-        toggleRouteSim(true);
-        openHudScreen('home');
-        setRideMode(true);
-      }
-    };
-  }
-  if ($('routeGmapsBtn')) $('routeGmapsBtn').onclick = openInGoogleMaps;
-  if ($('routeCloseBtn')) $('routeCloseBtn').onclick = stopNavigation;
+  if ($('q')) $('q').oninput = renderAppsTab;
 
-  // Trip / Fuel Sub-Tabs
-  if ($('subTripBtn')) $('subTripBtn').onclick = () => showTripSubTab('trip');
-  if ($('subFuelBtn')) $('subFuelBtn').onclick = () => showTripSubTab('fuel');
-
-  // GPS toggles
-  if ($('gpsHeaderPill')) {
-    $('gpsHeaderPill').onclick = () => setGpsMode(state.gpsMode === 'gps' ? 'sim' : 'gps');
-  }
-  if ($('gpsModeReal')) $('gpsModeReal').onclick = () => setGpsMode('gps');
-  if ($('gpsModeSim')) $('gpsModeSim').onclick = () => setGpsMode('sim');
-  if ($('spdSlider')) $('spdSlider').oninput = (e) => setSimSpeed(e.target.value);
-
-  // Voice controls in settings
-  if ($('voiceToggleBtn')) $('voiceToggleBtn').onclick = toggleVoice;
-  if ($('voiceTestBtn')) {
-    $('voiceTestBtn').onclick = () => speakThai('ทดสอบระบบนำทางด้วยเสียงภาษาไทย อีก 300 เมตร เลี้ยวขวาเข้าสู่ถนนสุขุมวิท', true);
-  }
-
-  // Safe mode
-  if ($('safeOnBtn')) $('safeOnBtn').onclick = () => { state.safeOn = true; persistState(); renderSettingsUi(); renderHudLayout(); };
-  if ($('safeOffBtn')) $('safeOffBtn').onclick = () => { state.safeOn = false; persistState(); renderSettingsUi(); renderHudLayout(); };
-
-  // Dock customization
-  if ($('addAppBtn')) $('addAppBtn').onclick = () => { $('appPicker').hidden = !$('appPicker').hidden; };
-  if ($('dockMineList')) {
-    $('dockMineList').onclick = (e) => {
-      const rm = e.target.closest('[data-rm]');
-      const mv = e.target.closest('[data-mv]');
-      if (rm) {
-        if (state.dock.length <= 1) return;
-        state.dock = state.dock.filter((x) => x !== rm.dataset.rm);
+  if ($('mine')) {
+    $('mine').onclick = (e) => {
+      const b = e.target.closest('button');
+      if (!b || b.disabled) return;
+      if (b.dataset.r) {
+        if (state.dock.length <= 1) {
+          if ($('msg')) $('msg').textContent = 'ต้องมีทางลัดอย่างน้อย 1 รายการ';
+          return;
+        }
+        const id = b.dataset.r;
+        state.dock = state.dock.filter((x) => x !== id);
+        if (state.screen === id) state.screen = 'home';
+        if ($('msg')) $('msg').textContent = `เอา ${APPS[id].n} ออกแล้ว`;
         persistState();
-        renderDockSettings();
-        renderHudLayout();
-      } else if (mv && !mv.disabled) {
-        const i = Number(mv.dataset.mv);
-        const j = i + Number(mv.dataset.dir);
+        renderAppsTab();
+        renderDashLayout();
+      } else if (b.dataset.m != null) {
+        const i = Number(b.dataset.m);
+        const j = i + Number(b.dataset.d);
         if (j >= 0 && j < state.dock.length) {
           [state.dock[i], state.dock[j]] = [state.dock[j], state.dock[i]];
           persistState();
-          renderDockSettings();
-          renderHudLayout();
+          renderAppsTab();
+          renderDashLayout();
         }
       }
     };
   }
-  if ($('dockAllList')) {
-    $('dockAllList').onclick = (e) => {
-      const add = e.target.closest('[data-add]');
-      if (!add || state.dock.length >= 4) return;
-      state.dock.push(add.dataset.add);
+
+  if ($('all')) {
+    $('all').onclick = (e) => {
+      const b = e.target.closest('button[data-a]');
+      if (!b || state.dock.length >= 4) return;
+      const id = b.dataset.a;
+      state.dock.push(id);
+      if ($('msg')) $('msg').textContent = `เพิ่ม ${APPS[id].n} แล้ว`;
       persistState();
-      renderDockSettings();
-      renderHudLayout();
+      renderAppsTab();
+      renderDashLayout();
     };
   }
 
-  // Add speed dial contact
-  if ($('contactAddBtn')) {
-    $('contactAddBtn').onclick = () => {
-      const name = $('contactNameIn').value.trim();
-      const tel = $('contactTelIn').value.trim();
-      if (!name || !tel) return;
-      state.contacts.push({ name: name.slice(0, 24), tel: tel.slice(0, 20) });
-      $('contactNameIn').value = '';
-      $('contactTelIn').value = '';
-      persistState();
-      renderContactsSettings();
-      renderHomeQuickDial();
-      renderHudPhoneGrid();
+  // Safe mode & GPS
+  if ($('safeOn')) $('safeOn').onclick = () => { state.safeOn = true; persistState(); syncStreamConfig(); renderSafeSection(); renderDashLayout(); };
+  if ($('safeOff')) $('safeOff').onclick = () => { state.safeOn = false; persistState(); syncStreamConfig(); renderSafeSection(); renderDashLayout(); };
+  if ($('spd')) $('spd').oninput = (e) => setSimSpeed(e.target.value);
+  if ($('gpsToggleBtn')) {
+    $('gpsToggleBtn').onclick = () => setGpsMode(state.gpsMode === 'gps' ? 'sim' : 'gps');
+  }
+
+  // Diagnostics buttons
+  if ($('hotT')) {
+    $('hotT').onclick = function () {
+      state.hot = !state.hot;
+      this.setAttribute('aria-pressed', String(state.hot));
+      renderDiag();
+    };
+  }
+  if ($('dropT')) {
+    $('dropT').onclick = () => {
+      if (state.recon) return;
+      state.recon = true;
+      renderDashLayout();
+      renderDiag();
+      setTimeout(() => {
+        state.recon = false;
+        state.rc += 1;
+        renderDashLayout();
+        renderDiag();
+      }, 2500);
+    };
+  }
+  if ($('logB')) {
+    $('logB').onclick = () => {
+      const L = state.lastDiag;
+      const text = `RideDash diag ${new Date().toISOString()}\nfps=${L.fps} latency_ms=${L.lat} temp_c=${L.tmp} bitrate_mbps=${L.br} ratio=${state.rname} res=${state.res} mode=${state.mode} speed=${state.speed} safe=${isSafeActive()} reconnects=${state.rc}`;
+      state.logMsg = true;
+      navigator.clipboard?.writeText(text)
+        .then(() => { if ($('dmsg')) $('dmsg').textContent = 'คัดลอก log แล้ว'; })
+        .catch(() => { if ($('dmsg')) $('dmsg').textContent = text; });
+      setTimeout(() => { state.logMsg = false; }, 4000);
     };
   }
 
-  // Export / Import Backup
-  if ($('exportDataBtn')) {
-    $('exportDataBtn').onclick = () => {
-      const blob = new Blob([localStorage.getItem('ridedash.v3') || '{}'], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `ridedash-backup-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-      if ($('sysNote')) $('sysNote').textContent = 'ดาวน์โหลดไฟล์สำรองข้อมูลเรียบร้อย';
-    };
-  }
-  if ($('importDataInput')) {
-    $('importDataInput').onchange = (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const d = JSON.parse(String(reader.result));
-          localStorage.setItem('ridedash.v3', JSON.stringify(d));
-          loadState();
-          applyTheme();
-          applyHudTheme();
-          renderDockSettings();
-          renderContactsSettings();
-          renderHomeQuickDial();
-          renderSettingsUi();
-          renderTripTab();
-          renderFuel();
-          renderHudLayout();
-          if ($('sysNote')) $('sysNote').textContent = 'นำเข้าข้อมูลเรียบร้อยแล้ว';
-        } catch (err) {
-          if ($('sysNote')) $('sysNote').textContent = 'ไฟล์ JSON ไม่ถูกต้อง';
-        }
-      };
-      reader.readAsText(file);
-    };
-  }
-
-  // Terms & Privacy Modal
+  // Terms & Privacy modal
   const openLegal = (reviewMode = false) => {
     const m = $('legalModal');
     const btn = $('legalAcceptBtn');
@@ -620,9 +502,7 @@ function bindEvents() {
     if (btn) btn.textContent = reviewMode ? 'ปิดหน้าต่าง' : 'ยอมรับและเริ่มใช้งาน';
     m.hidden = false;
   };
-
   if (!state.termsAccepted) openLegal(false);
-
   if ($('openLegalBtn')) $('openLegalBtn').onclick = () => openLegal(true);
   if ($('legalAcceptBtn')) {
     $('legalAcceptBtn').onclick = () => {
@@ -635,15 +515,13 @@ function bindEvents() {
   }
   if ($('legalModal')) {
     $('legalModal').onclick = (e) => {
-      if (e.target === $('legalModal') && state.termsAccepted) {
-        $('legalModal').hidden = true;
-      }
+      if (e.target === $('legalModal') && state.termsAccepted) $('legalModal').hidden = true;
     };
   }
 
-  // Re-acquire Wake Lock when returning to Ride Mode
+  // Re-acquire Wake Lock in mirror mode
   document.addEventListener('visibilitychange', async () => {
-    if (document.visibilityState === 'visible' && state.rideMode && !wakeLock && navigator.wakeLock?.request) {
+    if (document.visibilityState === 'visible' && state.mirrorMode && !wakeLock && navigator.wakeLock?.request) {
       try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
     }
   });
@@ -658,50 +536,59 @@ function registerServiceWorker() {
 // ===== Bootstrap =====
 loadState();
 applyTheme();
+initBridge();
+setBridgeHandlers({
+  onHandlebar(key, pressType) {
+    const mapRow = state.map[key];
+    if (!mapRow) return;
+    const action = mapRow[pressType ? 1 : 0];
+    toast(`แฮนด์ ${key} (${pressType ? 'กดค้าง' : 'กดสั้น'}) → ${aname(action)}`);
+    runAction(action);
+  },
+  onQrResult(raw) {
+    toast(`สแกน QR สำเร็จ: ${raw.slice(0, 28)}`);
+    connectBike(raw);
+  }
+});
+
 initMedia();
 initMap();
 initDash();
 initTrip();
 initFuel();
 initGps();
+initQrModal(setMirror);
 bindEvents();
 
-renderDockSettings();
-renderContactsSettings();
-renderHomeQuickDial();
-renderFavorites();
-renderSettingsUi();
-renderRouteSheet();
-showTripSubTab('trip');
-refreshWeather(true);
+renderAppsTab();
+renderDisplayTab();
+renderSafeSection();
+renderDiag();
+renderConnStatus();
+renderFocusCap();
 registerServiceWorker();
+
+setInterval(renderDiag, 1200);
 
 subscribe((topic) => {
   if (topic === 'gps') {
-    renderHudTelemetry();
-    renderSettingsUi();
-    renderRouteSheet();
-    refreshWeather(false);
-  } else if (topic === 'route-ready') {
-    drawActiveRoute(state.nav.phase !== 'guiding');
-    renderRouteSheet();
-  } else if (topic === 'route-cleared') {
-    clearRouteLayers();
-    renderRouteSheet();
-  } else if (topic === 'nav') {
-    renderHudNav();
-    renderRouteSheet();
-    renderHudTelemetry();
-    renderSettingsUi();
+    renderTelemetry();
+    renderSafeSection();
   } else if (topic === 'media') {
     renderMediaUi();
   } else if (topic === 'media-progress') {
     renderMediaProgress();
-  } else if (topic === 'weather') {
-    renderWeatherUi();
   } else if (topic === 'trip' || topic === 'trip-tick') {
     renderTripTab();
-    renderHudTelemetry();
+    renderTelemetry();
+  } else if (topic === 'screen') {
+    renderFocusCap();
+  } else if (topic === 'conn') {
+    renderConnStatus();
+    renderDashLayout();
+    renderDiag();
+  } else if (topic === 'diag') {
+    renderDiag();
   }
 });
 

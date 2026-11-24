@@ -1,0 +1,118 @@
+package com.ridedash.app.bridge
+
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import android.webkit.JavascriptInterface
+import android.webkit.WebView
+import org.json.JSONObject
+
+/**
+ * Starter Kotlin Bridge for integrating RideDash Frontend (assets/www/)
+ * with an Android MotoPlay / VirtualDisplay H.264 streaming service.
+ *
+ * Usage in Activity / VirtualDisplay Presentation:
+ *   webView.settings.javaScriptEnabled = true
+ *   webView.settings.domStorageEnabled = true
+ *   webView.addJavascriptInterface(RideDashBridge(this, webView, callbacks), "RideDashNative")
+ *   webView.loadUrl("https://appassets.androidplatform.net/assets/www/index.html")
+ *   // For the VirtualDisplay surface (800x480):
+ *   virtualWebView.loadUrl("https://appassets.androidplatform.net/assets/www/display.html")
+ */
+class RideDashBridge(
+    private val context: Context,
+    private val webView: WebView,
+    private val listener: NativeActionListener
+) {
+    interface NativeActionListener {
+        fun onScanQrRequested()
+        fun onConnectBike(qrPayload: String)
+        fun onDisconnectBike()
+        fun onStreamConfigUpdated(config: JSONObject)
+        fun onLaunchApp(appId: String, packageName: String)
+        fun onHandlebarMapUpdated(map: JSONObject)
+    }
+
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    // ===== Called from RideDash JS =====
+
+    @JavascriptInterface
+    fun scanQr() {
+        mainHandler.post { listener.onScanQrRequested() }
+    }
+
+    @JavascriptInterface
+    fun connectBike(qrPayload: String) {
+        mainHandler.post { listener.onConnectBike(qrPayload) }
+    }
+
+    @JavascriptInterface
+    fun disconnectBike() {
+        mainHandler.post { listener.onDisconnectBike() }
+    }
+
+    @JavascriptInterface
+    fun updateStreamConfig(configJson: String) {
+        val obj = runCatching { JSONObject(configJson) }.getOrDefault(JSONObject())
+        mainHandler.post { listener.onStreamConfigUpdated(obj) }
+    }
+
+    @JavascriptInterface
+    fun launchApp(appId: String, packageName: String) {
+        mainHandler.post { listener.onLaunchApp(appId, packageName) }
+    }
+
+    @JavascriptInterface
+    fun setHandlebarMap(mapJson: String) {
+        val obj = runCatching { JSONObject(mapJson) }.getOrDefault(JSONObject())
+        mainHandler.post { listener.onHandlebarMapUpdated(obj) }
+    }
+
+    // ===== Push Native Events into RideDash JS =====
+
+    fun pushConnectionState(state: String, bikeName: String = "", message: String = "", reconnects: Int = 0) {
+        val json = JSONObject().apply {
+            put("state", state)
+            put("bikeName", bikeName)
+            put("message", message)
+            put("reconnects", reconnects)
+        }
+        evalJs("window.RideDashBridge && window.RideDashBridge.onConnectionState($json)")
+    }
+
+    fun pushTelemetry(fps: Int, latencyMs: Int, tempC: Int, bitrateMbps: Double, reconnects: Int = 0) {
+        val json = JSONObject().apply {
+            put("fps", fps)
+            put("latencyMs", latencyMs)
+            put("tempC", tempC)
+            put("bitrateMbps", bitrateMbps)
+            put("reconnects", reconnects)
+        }
+        evalJs("window.RideDashBridge && window.RideDashBridge.onTelemetry($json)")
+    }
+
+    fun pushGps(lat: Double, lng: Double, speedKmh: Float, heading: Float, accuracy: Float) {
+        val json = JSONObject().apply {
+            put("lat", lat)
+            put("lng", lng)
+            put("speedKmh", speedKmh)
+            put("heading", heading)
+            put("accuracy", accuracy)
+        }
+        evalJs("window.RideDashBridge && window.RideDashBridge.onGps($json)")
+    }
+
+    fun pushHandlebarKey(key: String, pressType: String = "short") {
+        evalJs("window.RideDashBridge && window.RideDashBridge.onHandlebarKey('$key', '$pressType')")
+    }
+
+    fun pushQrResult(rawText: String) {
+        val quoted = JSONObject.quote(rawText)
+        evalJs("window.RideDashBridge && window.RideDashBridge.onQrResult($quoted)")
+    }
+
+    private fun evalJs(script: String) {
+        mainHandler.post { webView.evaluateJavascript(script, null) }
+    }
+}

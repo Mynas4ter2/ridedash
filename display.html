@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="th" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>RideDash — VirtualDisplay Output (5:3)</title>
+  <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="./css/tokens.css">
+  <link rel="stylesheet" href="./css/dash.css">
+</head>
+<body class="display-only">
+  <!-- Dedicated Zero-Chrome Dashboard for Android VirtualDisplay / H.264 Stream -->
+  <div class="dash" id="dashViewport" role="application" aria-label="RideDash VirtualDisplay">
+    <div class="dash-surface" id="dashSurface">
+      <aside class="dock" aria-label="แถบทางลัดบนจอรถ">
+        <div class="sb">
+          <b id="dockClock">--:--</b>
+          <span class="sig"><i></i><i></i><i></i><i></i></span>
+        </div>
+        <div class="dock-apps" id="dockApps"></div>
+        <button class="di hm cur" id="dockHomeBtn" type="button" aria-label="หน้าโฮม"></button>
+      </aside>
+
+      <section class="dash-main" id="dashMain" data-view="home" data-safe="false">
+        <div class="map-slot">
+          <div id="liveMap"></div>
+          <div class="turn">
+            <svg viewBox="0 0 24 24"><path d="M7 21V12a3 3 0 0 1 3-3h8"/><path d="M14 5l4 4-4 4"/></svg>
+            <div>
+              <b>200 ม.</b>
+              <small>เลี้ยวขวา ถนนสุขุมวิท</small>
+            </div>
+          </div>
+          <div class="safe-badge">โหมดปลอดภัย</div>
+          <div class="spdpill">
+            <strong id="safeSpeed">38</strong>
+            <span id="safeHeading">km/h · ↗ NE</span>
+          </div>
+          <div class="map-right-pills">
+            <button class="map-mini-btn" id="mapRecenterDash" type="button" title="กลับไปยังตำแหน่งปัจจุบัน">◎</button>
+            <span class="prov-pill" id="dashProv">Amap</span>
+          </div>
+        </div>
+
+        <div class="dash-col">
+          <div class="dash-card" id="homeMediaCard">
+            <div class="np-row">
+              <div class="art">♪</div>
+              <div class="np-txt">
+                <b id="miniTitle">Night Ride</b>
+                <small id="miniArtist">SomaFM</small>
+              </div>
+            </div>
+            <div class="ctl-inner">
+              <button class="mbtn" id="miniPrev" type="button" aria-label="ก่อนหน้า">
+                <svg viewBox="0 0 24 24"><rect x="5" y="5" width="2.5" height="14" rx="1"/><polygon points="19,5 9,12 19,19"/></svg>
+              </button>
+              <button class="mbtn play" id="miniPlay" type="button" aria-label="เล่นหรือหยุด"></button>
+              <button class="mbtn" id="miniNext" type="button" aria-label="ถัดไป">
+                <svg viewBox="0 0 24 24"><rect x="16.5" y="5" width="2.5" height="14" rx="1"/><polygon points="5,5 15,12 5,19"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="dash-card spd-card" id="homeSpeedCard">
+            <div style="display:flex;align-items:baseline;gap:4px">
+              <span class="spd-val" id="homeSpeed">38</span>
+              <span class="spd-unit">km/h</span>
+            </div>
+            <div class="spd-head" id="homeHeading">↗ NE 45°</div>
+            <div class="spd-trip" id="homeTripStat">0.0 กม. · 00:00</div>
+          </div>
+        </div>
+
+        <div class="dash-screen" data-screen="music">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <b style="font-size:18px">เครื่องเล่นเพลง</b>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div>
+              <div id="fullTitle" style="font-size:22px;font-weight:700">Night Ride</div>
+              <div id="fullArtist" style="font-size:14px;color:#94A3B8">SomaFM</div>
+            </div>
+            <div class="bar" id="musicBar"><span id="musicBarFill"></span></div>
+            <div class="ctl-inner" style="justify-content:flex-start;gap:14px">
+              <button class="mbtn" id="fullPrev" type="button" aria-label="ก่อนหน้า">
+                <svg viewBox="0 0 24 24"><rect x="5" y="5" width="2.5" height="14" rx="1"/><polygon points="19,5 9,12 19,19"/></svg>
+              </button>
+              <button class="mbtn play" id="fullPlay" type="button" aria-label="เล่นหรือหยุด"></button>
+              <button class="mbtn" id="fullNext" type="button" aria-label="ถัดไป">
+                <svg viewBox="0 0 24 24"><rect x="16.5" y="5" width="2.5" height="14" rx="1"/><polygon points="5,5 15,12 5,19"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="row" id="musicPresets" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+        </div>
+
+        <div class="dash-screen" data-screen="trip">
+          <div class="center-screen">
+            <div style="display:flex;align-items:baseline;gap:6px">
+              <strong id="tripDashSpeed" style="font-size:58px;line-height:1">38</strong>
+              <span style="color:#94A3B8;font-size:18px">km/h</span>
+            </div>
+            <div id="tripDashHeading" style="font-size:16px;font-weight:600">↗ ตะวันออกเฉียงเหนือ · 45°</div>
+            <div class="trip-stats-row">
+              <div class="trip-stat-box"><b id="tripDashDist">0.00</b><small>กม.</small></div>
+              <div class="trip-stat-box"><b id="tripDashTime">00:00</b><small>เวลา</small></div>
+              <div class="trip-stat-box"><b id="tripDashAvg">0</b><small>เฉลี่ย</small></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-screen" data-screen="ext">
+          <div class="center-screen">
+            <div class="ext-badge" id="extBadge">S</div>
+            <b id="extTitle" style="font-size:24px">Spotify</b>
+            <small style="color:#94A3B8;font-size:14px">ฉายจากจอเสมือนของมือถือ</small>
+          </div>
+        </div>
+
+        <div class="ovl" id="reconOvl" hidden>กำลังเชื่อมต่อใหม่…</div>
+      </section>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script type="module">
+    import { state, loadState, subscribe, visibleDock } from './js/store.js';
+    import { initBridge, setBridgeHandlers } from './js/bridge.js';
+    import { initMap } from './js/map.js';
+    import { initMedia } from './js/media.js';
+    import { initGps } from './js/gps.js';
+    import { initDash, goFocus, okFocus, backHome, openScreen, renderDashLayout, renderTelemetry, renderMediaUi, renderMediaProgress } from './js/dash.js';
+
+    loadState();
+    initBridge();
+    setBridgeHandlers({
+      onHandlebar(key, pressType) {
+        const row = state.map[key];
+        if (!row) return;
+        const act = row[pressType ? 1 : 0];
+        if (act === 'left') goFocus(-1);
+        else if (act === 'right') goFocus(1);
+        else if (act === 'open') okFocus();
+        else if (act === 'back') backHome();
+        else if (act === 'map' || act === 'music') {
+          if (visibleDock().includes(act)) openScreen(act);
+        }
+      }
+    });
+
+    initMedia();
+    initMap();
+    initDash();
+    initGps();
+
+    subscribe((topic) => {
+      if (topic === 'gps' || topic === 'trip' || topic === 'trip-tick') renderTelemetry();
+      else if (topic === 'media') renderMediaUi();
+      else if (topic === 'media-progress') renderMediaProgress();
+      else if (topic === 'conn') renderDashLayout();
+    });
+
+    // Live-sync settings changed in index.html
+    window.addEventListener('storage', () => {
+      loadState();
+      renderDashLayout();
+    });
+  </script>
+</body>
+</html>
