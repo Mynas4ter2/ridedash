@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RideDash</string>
+    <string name="notif_channel_name">RideDash Background Service</string>
+    <string name="notif_title">RideDash กำลังทำงาน</string>
+    <string name="notif_text">ติดตามพิกัด GPS และพร้อมเชื่อมต่อจอรถ Zontes 368K</string>
+</resources>

@@ -1,0 +1,10 @@
+# Android build artifacts & auto-synced web assets
+android/.gradle/
+android/build/
+android/app/build/
+android/app/src/main/assets/www/
+android/local.properties
+*.iml
+.idea/
+.DS_Store
+Thumbs.db
