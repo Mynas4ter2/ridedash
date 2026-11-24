@@ -51,6 +51,7 @@ export const state = {
   screen: 'home',         // HUD view: 'home' | 'map' | 'music' | 'trip' | 'phone' | 'weather' | ext
   rideMode: false,
   onboardingDismissed: false,
+  termsAccepted: false,
 
   dock: ['map', 'music', 'trip', 'phone'],
   mapStyle: 'light',
@@ -142,6 +143,7 @@ export function loadState() {
       if (saved.theme === 'light' || saved.theme === 'dark') state.theme = saved.theme;
       if (saved.hudTheme === 'day' || saved.hudTheme === 'night') state.hudTheme = saved.hudTheme;
       if (typeof saved.onboardingDismissed === 'boolean') state.onboardingDismissed = saved.onboardingDismissed;
+      if (typeof saved.termsAccepted === 'boolean') state.termsAccepted = saved.termsAccepted;
       if (Array.isArray(saved.dock) && saved.dock.length) {
         state.dock = saved.dock.filter((id) => APPS[id]).slice(0, 4);
       }
@@ -176,6 +178,7 @@ export function persistState() {
       theme: state.theme,
       hudTheme: state.hudTheme,
       onboardingDismissed: state.onboardingDismissed,
+      termsAccepted: state.termsAccepted,
       dock: state.dock,
       mapStyle: state.mapStyle,
       safeOn: state.safeOn,

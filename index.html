@@ -322,6 +322,14 @@
           </div>
           <p class="note" id="sysNote">ข้อมูลทริป ค่าน้ำมัน และเบอร์โทรทั้งหมดเก็บในเครื่องของคุณอย่างปลอดภัย</p>
         </div>
+
+        <div class="card">
+          <h2 class="section-title"><span class="section-dot ok"></span>ข้อตกลงและความเป็นส่วนตัว</h2>
+          <p class="note">RideDash เก็บข้อมูลทั้งหมดไว้ในเครื่องของคุณเท่านั้น ไม่มีเซิร์ฟเวอร์เก็บข้อมูลส่วนตัว</p>
+          <button class="btn btn-full" id="openLegalBtn" type="button">อ่าน Terms & Privacy อีกครั้ง</button>
+        </div>
+
+        <p class="settings-credit">จัดทำโดย ratchapoom และ Mynas4ter2</p>
       </section>
     </main>
   </div>
@@ -515,6 +523,38 @@
         <button class="hud-dock-btn hud-dock-exit" id="hudExitBtn" type="button" title="ออกจากโหมดขับขี่" aria-label="ออกจากโหมดขับขี่">✕</button>
       </div>
     </aside>
+  </div>
+
+  <!-- Terms of Use & Privacy Policy Modal -->
+  <div class="modal-backdrop" id="legalModal" role="dialog" aria-modal="true" aria-labelledby="legalTitle" hidden>
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h2 id="legalTitle">ข้อตกลงการใช้งาน & ความเป็นส่วนตัว</h2>
+        <p>RideDash — Personal Riding Assistant</p>
+      </div>
+      <div class="modal-body">
+        <div class="legal-block">
+          <h3><span class="section-dot warn"></span>ข้อตกลงการใช้งานและความปลอดภัย (Terms)</h3>
+          <ul>
+            <li>แอปนี้จัดทำขึ้นเพื่อช่วยแสดงข้อมูลการเดินทาง แผนที่ และนำทางเบื้องต้นสำหรับการใช้งานส่วนบุคคล</li>
+            <li>โปรดตั้งค่าเส้นทางก่อนออกเดินทางทุกครั้ง ปฏิบัติตามกฎจราจร และไม่ละสายตาจากถนนระหว่างขับขี่</li>
+            <li>ความเร็ว แผนที่ และเส้นทางอาจคลาดเคลื่อนตามสัญญาณ GPS และข้อมูลแผนที่สาธารณะ ผู้พัฒนาไม่รับผิดชอบต่อความเสียหายหรืออุบัติเหตุที่อาจเกิดขึ้นจากการใช้งาน</li>
+          </ul>
+        </div>
+        <div class="legal-block">
+          <h3><span class="section-dot ok"></span>นโยบายความเป็นส่วนตัว (Privacy)</h3>
+          <ul>
+            <li><b>เก็บข้อมูลในเครื่อง 100%:</b> ประวัติทริป ค่าน้ำมัน เบอร์โทรด่วน และการตั้งค่าทั้งหมดถูกจัดเก็บเฉพาะในอุปกรณ์ของคุณ (<code>localStorage</code>) ไม่มีการส่งข้อมูลส่วนตัวกลับมายังผู้พัฒนา</li>
+            <li><b>สิทธิ์ตำแหน่ง (GPS):</b> ใช้สำหรับแสดงพิกัด ความเร็ว คำนวณเส้นทาง และดึงสภาพอากาศแบบเรียลไทม์เท่านั้น</li>
+            <li><b>บริการภายนอก:</b> แผนที่และเส้นทางใช้บริการสาธารณะจาก OpenStreetMap, Nominatim, OSRM และสภาพอากาศจาก Open-Meteo</li>
+          </ul>
+        </div>
+        <p class="legal-credit">จัดทำโดย ratchapoom และ Mynas4ter2</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-full" id="legalAcceptBtn" type="button">ยอมรับและเริ่มใช้งาน</button>
+      </div>
+    </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>

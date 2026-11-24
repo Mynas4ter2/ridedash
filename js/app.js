@@ -539,6 +539,35 @@ function bindEvents() {
     };
   }
 
+  // Terms & Privacy Modal
+  const openLegal = (reviewMode = false) => {
+    const m = $('legalModal');
+    const btn = $('legalAcceptBtn');
+    if (!m) return;
+    if (btn) btn.textContent = reviewMode ? 'ปิดหน้าต่าง' : 'ยอมรับและเริ่มใช้งาน';
+    m.hidden = false;
+  };
+
+  if (!state.termsAccepted) openLegal(false);
+
+  if ($('openLegalBtn')) $('openLegalBtn').onclick = () => openLegal(true);
+  if ($('legalAcceptBtn')) {
+    $('legalAcceptBtn').onclick = () => {
+      if (!state.termsAccepted) {
+        state.termsAccepted = true;
+        persistState();
+      }
+      if ($('legalModal')) $('legalModal').hidden = true;
+    };
+  }
+  if ($('legalModal')) {
+    $('legalModal').onclick = (e) => {
+      if (e.target === $('legalModal') && state.termsAccepted) {
+        $('legalModal').hidden = true;
+      }
+    };
+  }
+
   // Re-acquire Wake Lock when returning to Ride Mode
   document.addEventListener('visibilitychange', async () => {
     if (document.visibilityState === 'visible' && state.rideMode && !wakeLock && navigator.wakeLock?.request) {
