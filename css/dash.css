@@ -1,0 +1,887 @@
+/* ============================================================
+   RideDash Automotive Viewport (Responsive & Touch-Friendly)
+   Uses CSS Container Queries so Leaflet maps stay 1:1 native
+   sharp and draggable in both Preview and Fullscreen Ride Mode
+   ============================================================ */
+
+.dash-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 5 / 3;
+  background: #000;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.dash-surface {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #090A0F;
+  color: #F8FAFC;
+  display: flex;
+  overflow: hidden;
+  container-type: size;
+  container-name: dash;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Aspect-ratio constraints inside viewport */
+.dash-viewport[data-fit="ratio"] .dash-surface {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Fullscreen Ride / Mirror Mode */
+body.ride-mode {
+  background: #000;
+  overflow: hidden;
+}
+
+body.ride-mode::before,
+body.ride-mode .top-header,
+body.ride-mode .ctl-col,
+body.ride-mode .device-bar,
+body.ride-mode .preview-meta,
+body.ride-mode .handlebar-card,
+body.ride-mode .bottom-nav,
+body.ride-mode .footer-note {
+  display: none !important;
+}
+
+body.ride-mode .app-shell {
+  max-width: none;
+  padding: 0;
+  margin: 0;
+  gap: 0;
+  height: 100dvh;
+}
+
+body.ride-mode .layout,
+body.ride-mode .stage-col {
+  display: block;
+  position: static;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+body.ride-mode .device-frame {
+  padding: 0;
+  border-radius: 0;
+  border: 0;
+  box-shadow: none;
+  background: #000;
+  height: 100dvh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.ride-mode .dash-viewport {
+  width: 100vw;
+  height: 100dvh;
+  aspect-ratio: auto !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Ride Mode Exit button cleanly docked inside left dock (zero overlap!) */
+.dock-btn.dock-exit {
+  display: none;
+  background: rgba(239, 68, 68, 0.22);
+  color: #FCA5A5;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  font-size: clamp(11px, 2cqw, 14px);
+}
+
+.dock-btn.dock-exit:hover {
+  background: rgba(239, 68, 68, 0.38);
+  color: #fff;
+}
+
+body.ride-mode .dock-btn.dock-exit {
+  display: flex;
+}
+
+/* ===== Left Dock (Android Auto / CarPlay Style) ===== */
+.dash-dock {
+  width: clamp(58px, 12cqw, 92px);
+  flex: none;
+  background: #050608;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(8px, 2.2cqh, 16px) 6px;
+  gap: clamp(6px, 1.8cqh, 14px);
+  z-index: 15;
+}
+
+.dock-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.dock-clock {
+  font-size: clamp(13px, 2.7cqw, 20px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.dock-substatus {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: clamp(9.5px, 1.6cqw, 12px);
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 600;
+}
+
+.dock-apps {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(6px, 1.8cqh, 12px);
+  flex: 1;
+  justify-content: center;
+  width: 100%;
+}
+
+.dock-btn {
+  width: clamp(42px, 8.2cqw, 62px);
+  height: clamp(42px, 8.2cqw, 62px);
+  border-radius: clamp(12px, 2.2cqw, 18px);
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: clamp(16px, 3cqw, 24px);
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dock-btn svg {
+  width: 54%;
+  height: 54%;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dock-btn:active { transform: scale(0.93); }
+
+.dock-btn.active {
+  box-shadow: 0 0 0 2.5px #050608, 0 0 0 5px rgba(255, 255, 255, 0.45);
+}
+
+.dock-btn.focused {
+  box-shadow: 0 0 0 2.5px #050608, 0 0 0 5px #38A1FF;
+  transform: scale(1.06);
+}
+
+.dock-home {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.dock-home.active {
+  background: #fff;
+  color: #090A0F;
+  box-shadow: none;
+}
+
+/* ===== Main Content Area ===== */
+.dash-main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: #0D0F15;
+  padding: clamp(8px, 2cqh, 16px);
+  display: flex;
+  gap: clamp(8px, 1.6cqw, 14px);
+  overflow: hidden;
+}
+
+/* Persistent Map Container (never destroyed during updates!) */
+.dash-map-slot {
+  position: relative;
+  flex: 1.65;
+  min-width: 0;
+  border-radius: clamp(14px, 2.6cqw, 24px);
+  overflow: hidden;
+  background: #141821;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: flex 0.25s ease;
+}
+
+.dash-main[data-view="map"] .dash-map-slot,
+.dash-main[data-safe="true"][data-view="home"] .dash-map-slot {
+  flex: 1;
+}
+
+.dash-main:not([data-view="home"]):not([data-view="map"]) .dash-map-slot {
+  display: none;
+}
+
+#liveMap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  background: #141821;
+}
+
+#liveMap.map-dark .leaflet-tile-pane {
+  filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(92%) saturate(85%);
+}
+
+/* Leaflet dark tweaks */
+.leaflet-container {
+  background: #141821;
+  font-family: var(--font);
+}
+
+.leaflet-control-attribution {
+  font-size: 9px !important;
+  background: rgba(9, 10, 15, 0.65) !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+  border-radius: 6px 0 0 0;
+}
+.leaflet-control-attribution a { color: rgba(255, 255, 255, 0.7) !important; }
+
+/* Map Overlays */
+.map-overlay-top {
+  position: absolute;
+  top: clamp(8px, 2cqh, 14px);
+  left: clamp(8px, 2cqh, 14px);
+  right: clamp(8px, 2cqh, 14px);
+  z-index: 500;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.map-overlay-top > * { pointer-events: auto; }
+
+.turn-banner {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.8cqw, 14px);
+  padding: clamp(8px, 1.8cqh, 14px) clamp(10px, 2.2cqw, 18px);
+  border-radius: clamp(12px, 2cqw, 18px);
+  background: rgba(15, 18, 26, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  max-width: 78%;
+  cursor: pointer;
+}
+
+.turn-icon {
+  width: clamp(26px, 5cqw, 44px);
+  height: clamp(26px, 5cqw, 44px);
+  flex: none;
+  color: #38A1FF;
+}
+
+.turn-text b {
+  display: block;
+  font-size: clamp(15px, 3.2cqw, 28px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.turn-text small {
+  display: block;
+  font-size: clamp(11px, 1.9cqw, 15px);
+  color: rgba(255, 255, 255, 0.72);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 34cqw;
+}
+
+.dash-main[data-safe="true"] .turn-banner {
+  padding: clamp(10px, 2.4cqh, 18px) clamp(14px, 2.8cqw, 22px);
+}
+
+.dash-main[data-safe="true"] .turn-text b {
+  font-size: clamp(20px, 4.4cqw, 36px);
+}
+
+.safe-chip {
+  display: none;
+  padding: clamp(5px, 1.2cqh, 8px) clamp(10px, 2cqw, 16px);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #FBBF24, #F59E0B);
+  color: #111;
+  font-size: clamp(10px, 1.8cqw, 14px);
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);
+  white-space: nowrap;
+}
+
+.dash-main[data-safe="true"] .safe-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.map-overlay-bottom {
+  position: absolute;
+  bottom: clamp(8px, 2cqh, 14px);
+  left: clamp(8px, 2cqh, 14px);
+  right: clamp(8px, 2cqh, 14px);
+  z-index: 500;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.map-overlay-bottom > * { pointer-events: auto; }
+
+.map-speed-pill {
+  display: none;
+  align-items: baseline;
+  gap: 8px;
+  padding: clamp(8px, 1.8cqh, 14px) clamp(12px, 2.5cqw, 20px);
+  border-radius: clamp(14px, 2.2cqw, 20px);
+  background: rgba(15, 18, 26, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(14px);
+}
+
+.dash-main[data-safe="true"][data-view="home"] .map-speed-pill,
+.dash-main[data-view="map"] .map-speed-pill {
+  display: inline-flex;
+}
+
+.map-speed-pill strong {
+  font-size: clamp(24px, 5cqw, 42px);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.map-speed-pill span {
+  font-size: clamp(10.5px, 1.8cqw, 14px);
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 600;
+}
+
+.map-tools {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.map-fab {
+  height: clamp(32px, 6.2cqh, 44px);
+  padding: 0 clamp(10px, 1.8cqw, 14px);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(15, 18, 26, 0.88);
+  color: #fff;
+  font-size: clamp(11px, 1.8cqw, 13.5px);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  backdrop-filter: blur(12px);
+}
+
+.map-fab:active { transform: scale(0.95); }
+.map-fab.active { background: #0A84FF; border-color: transparent; }
+
+/* Map Search Drawer inside Map View */
+.map-search-panel {
+  position: absolute;
+  top: clamp(8px, 2cqh, 14px);
+  left: clamp(8px, 2cqh, 14px);
+  right: clamp(8px, 2cqh, 14px);
+  z-index: 600;
+  background: rgba(15, 18, 26, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  padding: 10px;
+  backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.map-search-row {
+  display: flex;
+  gap: 6px;
+}
+
+.map-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 13.5px;
+}
+
+.map-search-results {
+  max-height: 36cqh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.map-search-item {
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.map-search-item:hover { background: rgba(10, 132, 255, 0.35); }
+
+/* ===== Right Side Column (Home Split View) ===== */
+.dash-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.6cqh, 14px);
+}
+
+.dash-main:not([data-view="home"]) .dash-side,
+.dash-main[data-safe="true"] .dash-side {
+  display: none;
+}
+
+.dash-card {
+  flex: 1;
+  min-height: 0;
+  border-radius: clamp(14px, 2.4cqw, 22px);
+  background: #171A23;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  padding: clamp(10px, 2.2cqh, 18px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  position: relative;
+}
+
+.dash-card.clickable { cursor: pointer; }
+.dash-card.clickable:hover { border-color: rgba(255, 255, 255, 0.18); }
+
+/* Home Speed & Weather Card */
+.speed-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.speed-readout {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.speed-num {
+  font-size: clamp(32px, 7.6cqw, 66px);
+  font-weight: 700;
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.speed-unit {
+  font-size: clamp(11px, 1.9cqw, 16px);
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+}
+
+.weather-mini {
+  text-align: right;
+  font-size: clamp(11px, 1.9cqw, 15px);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.weather-mini small {
+  display: block;
+  font-size: clamp(9.5px, 1.5cqw, 12px);
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 400;
+}
+
+.speed-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: clamp(10.5px, 1.75cqw, 14px);
+  color: rgba(255, 255, 255, 0.74);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Home Mini Media Card */
+.media-mini-head {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.8cqw, 14px);
+  min-width: 0;
+}
+
+.media-art {
+  width: clamp(36px, 7cqw, 58px);
+  height: clamp(36px, 7cqw, 58px);
+  border-radius: clamp(9px, 1.6cqw, 14px);
+  background: linear-gradient(135deg, #FF375F, #5E5CE6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  font-size: clamp(16px, 3cqw, 24px);
+}
+
+.media-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.media-meta b {
+  display: block;
+  font-size: clamp(13px, 2.4cqw, 19px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.media-meta small {
+  display: block;
+  font-size: clamp(10.5px, 1.7cqw, 13.5px);
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.media-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 8px;
+}
+
+.media-btn {
+  width: clamp(34px, 6.5cqh, 48px);
+  height: clamp(34px, 6.5cqh, 48px);
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.14s, background 0.14s;
+}
+
+.media-btn:active { transform: scale(0.92); }
+.media-btn.play {
+  background: #fff;
+  color: #090A0F;
+  width: clamp(38px, 7.6cqh, 54px);
+  height: clamp(38px, 7.6cqh, 54px);
+}
+
+.media-btn svg { width: 52%; height: 52%; fill: currentColor; }
+
+/* ===== Full App Screens inside Dashboard ===== */
+.dash-screen {
+  display: none;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  border-radius: clamp(14px, 2.4cqw, 24px);
+  background: #141720;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: clamp(12px, 3cqh, 26px);
+  overflow-y: auto;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: clamp(10px, 2.2cqh, 18px);
+}
+
+.dash-main[data-view="music"] .dash-screen[data-screen="music"],
+.dash-main[data-view="trip"] .dash-screen[data-screen="trip"],
+.dash-main[data-view="phone"] .dash-screen[data-screen="phone"],
+.dash-main[data-view="weather"] .dash-screen[data-screen="weather"],
+.dash-main[data-view="ext"] .dash-screen[data-screen="ext"] {
+  display: flex;
+}
+
+.screen-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.screen-head h2 {
+  font-size: clamp(16px, 3.2cqw, 26px);
+  font-weight: 700;
+}
+
+/* Music Full Screen */
+.music-full-body {
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 3.5cqw, 32px);
+  flex: 1;
+}
+
+.music-full-art {
+  width: clamp(76px, 20cqw, 168px);
+  height: clamp(76px, 20cqw, 168px);
+  border-radius: clamp(16px, 3cqw, 28px);
+  background: linear-gradient(135deg, #FF375F, #5E5CE6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(32px, 7cqw, 64px);
+  flex: none;
+  box-shadow: 0 12px 32px rgba(94, 92, 230, 0.35);
+}
+
+.music-full-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 2cqh, 14px);
+}
+
+.music-full-title {
+  font-size: clamp(18px, 3.8cqw, 32px);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-full-artist {
+  font-size: clamp(12px, 2.2cqw, 18px);
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.music-progress {
+  width: 100%;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.music-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #38A1FF;
+  border-radius: 99px;
+  transition: width 0.25s linear;
+}
+
+.music-presets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dash-pill-btn {
+  height: clamp(30px, 6cqh, 40px);
+  padding: 0 clamp(10px, 2cqw, 16px);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font-size: clamp(11px, 1.8cqw, 14px);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.dash-pill-btn.active,
+.dash-pill-btn.primary {
+  background: #0A84FF;
+  border-color: transparent;
+}
+
+/* Trip Full Screen */
+.trip-hero {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+}
+
+.trip-hero strong {
+  font-size: clamp(46px, 11cqw, 96px);
+  font-weight: 700;
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+}
+
+.trip-hero span {
+  font-size: clamp(14px, 2.6cqw, 22px);
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+}
+
+.trip-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(6px, 1.5cqw, 12px);
+}
+
+.trip-box {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: clamp(10px, 2cqw, 16px);
+  padding: clamp(8px, 1.8cqh, 14px);
+  text-align: center;
+}
+
+.trip-box b {
+  display: block;
+  font-size: clamp(15px, 3cqw, 26px);
+  font-variant-numeric: tabular-nums;
+}
+
+.trip-box small {
+  font-size: clamp(10px, 1.6cqw, 13px);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.trip-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Phone Speed Dial Screen */
+.dial-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(100px, 22cqw, 160px), 1fr));
+  gap: clamp(8px, 1.8cqw, 14px);
+  flex: 1;
+  align-content: start;
+}
+
+.dial-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: clamp(10px, 2.4cqh, 18px) 8px;
+  border-radius: clamp(12px, 2.2cqw, 18px);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  text-decoration: none;
+  text-align: center;
+  transition: transform 0.14s, background 0.14s;
+}
+
+.dial-tile:hover { background: rgba(34, 197, 94, 0.22); border-color: rgba(34, 197, 94, 0.45); }
+.dial-tile:active { transform: scale(0.96); }
+
+.dial-avatar {
+  width: clamp(36px, 7cqw, 52px);
+  height: clamp(36px, 7cqw, 52px);
+  border-radius: 50%;
+  background: linear-gradient(135deg, #22C55E, #16A34A);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(16px, 3cqw, 22px);
+  font-weight: 700;
+}
+
+.dial-tile b { font-size: clamp(12px, 2cqw, 15px); }
+.dial-tile small { font-size: clamp(10px, 1.6cqw, 12px); color: rgba(255, 255, 255, 0.65); }
+
+/* Weather & External Launcher Screen */
+.center-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: clamp(8px, 2cqh, 16px);
+}
+
+.ext-icon {
+  width: clamp(58px, 13cqw, 108px);
+  height: clamp(58px, 13cqw, 108px);
+  border-radius: clamp(16px, 3cqw, 28px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(28px, 6cqw, 52px);
+  font-weight: 700;
+  color: #fff;
+}
+
+.dash-overlay-msg {
+  position: absolute;
+  inset: 0;
+  z-index: 900;
+  background: rgba(5, 6, 8, 0.86);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(16px, 3.6cqw, 28px);
+  font-weight: 700;
+  color: #fff;
+}
