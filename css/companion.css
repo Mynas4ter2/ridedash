@@ -9,10 +9,22 @@
   max-width: 460px;
   min-height: 100dvh;
   margin: 0 auto;
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(420px circle at 10% 4%, rgba(14, 165, 233, 0.14), transparent 62%),
+    radial-gradient(360px circle at 92% 78%, rgba(99, 102, 241, 0.1), transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%2394A3B8' stroke-opacity='0.09' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M24 20l6 14-6-3.5L18 34z'/%3E%3Ccircle cx='88' cy='28' r='7'/%3E%3Cpath d='M88 24v4l3 2'/%3E%3Cpath d='M20 84a6 6 0 1 1 12 0c0 4.5-6 9.5-6 9.5S20 88.5 20 84z'/%3E%3Cpath d='M80 90V78l11-2v12'/%3E%3Ccircle cx='78' cy='90' r='2.5'/%3E%3Ccircle cx='89' cy='88' r='2.5'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: auto, auto, 120px 120px;
   display: flex;
   flex-direction: column;
   padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+}
+
+:root[data-theme="light"] .mobile-app {
+  background-image:
+    radial-gradient(420px circle at 10% 4%, rgba(2, 132, 199, 0.09), transparent 62%),
+    radial-gradient(360px circle at 92% 78%, rgba(234, 88, 12, 0.06), transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%2364748B' stroke-opacity='0.11' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M24 20l6 14-6-3.5L18 34z'/%3E%3Ccircle cx='88' cy='28' r='7'/%3E%3Cpath d='M88 24v4l3 2'/%3E%3Cpath d='M20 84a6 6 0 1 1 12 0c0 4.5-6 9.5-6 9.5S20 88.5 20 84z'/%3E%3Cpath d='M80 90V78l11-2v12'/%3E%3Ccircle cx='78' cy='90' r='2.5'/%3E%3Ccircle cx='89' cy='88' r='2.5'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 @media (min-width: 500px) {
@@ -124,43 +136,44 @@
   background: currentColor;
 }
 
-.batt-chip {
-  cursor: default;
-  gap: 5px;
-  padding: 0 9px;
+/* Search Drawer (Collapsible Favorites & POIs under "จะไปไหนดี?") */
+.search-drawer {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.search-drawer summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 4px;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.batt {
-  width: 20px;
-  height: 10px;
-  border: 1.7px solid currentColor;
-  border-radius: 3px;
-  position: relative;
-  flex: none;
+.search-drawer summary::-webkit-details-marker { display: none; }
+
+.search-drawer summary .drawer-chev {
+  font-size: 12px;
+  color: var(--muted);
+  transition: transform 0.18s ease;
 }
 
-.batt::after {
-  content: "";
-  position: absolute;
-  right: -3px;
-  top: 2px;
-  width: 2px;
-  height: 4px;
-  border-radius: 1px;
-  background: currentColor;
+.search-drawer[open] summary .drawer-chev {
+  transform: rotate(180deg);
 }
 
-.batt-fill {
-  position: absolute;
-  inset: 1.5px auto 1.5px 1.5px;
-  border-radius: 1.5px;
-  background: currentColor;
+.search-drawer-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
 }
-
-.batt.good { color: var(--ok); }
-.batt.mid { color: var(--warn); }
-.batt.low { color: var(--danger); }
 
 /* Tab Content Area */
 .app-body {

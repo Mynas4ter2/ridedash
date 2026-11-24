@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="th" data-theme="light">
+<html lang="th" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0284C7">
+  <meta name="theme-color" content="#080B11">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>RideDash — Mobile Riding Assistant</title>
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
@@ -32,42 +32,46 @@
       <div class="header-pills">
         <button class="status-pill gps-sim" id="gpsHeaderPill" type="button" title="แตะเพื่อสลับระหว่าง GPS จริง กับโหมดจำลอง">
           <i class="status-dot"></i>
-          <span id="gpsHeaderText">จำลอง</span>
+          <span id="gpsHeaderText">โหมดจำลอง</span>
         </button>
-        <div class="status-pill batt-chip" title="แบตเตอรี่">
-          <span class="batt good" id="battIcon"><span class="batt-fill" id="battFill" style="width:87%"></span></span>
-          <span id="battTxt">87%</span>
-        </div>
-        <button class="icon-pill-btn" id="headerThemeBtn" type="button" title="สลับโหมดมืด/สว่าง" aria-label="สลับโหมดมืดหรือสว่าง">🌙</button>
+        <button class="icon-pill-btn" id="headerThemeBtn" type="button" title="สลับโหมดมืด/สว่าง" aria-label="สลับโหมดมืดหรือสว่าง">☀️</button>
       </div>
     </header>
 
     <main class="app-body">
       <!-- TAB 0: HOME (Clean, Minimalist, Instant Clarity) -->
       <section class="tab-view" data-tab="0">
-        <!-- Where to? Search Card -->
+        <!-- Where to? Search Card with Collapsible Drawer -->
         <div class="search-card">
           <div class="search-bar">
             <span style="color:var(--acc);font-size:16px">🔍</span>
             <input id="homeSearchInput" type="search" placeholder="จะไปไหนดี? เช่น ปั๊ม ปตท, สยาม...">
             <button class="search-go" id="homeSearchGo" type="button">ค้นหา</button>
           </div>
-          <div class="fav-row">
-            <button class="fav-btn unset" id="favHomeBtn" type="button">
-              <span style="font-size:18px">🏠</span>
-              <div class="fav-btn-txt"><b>กลับบ้าน</b><small id="favHomeSub">แตะเพื่อตั้งค่า</small></div>
-            </button>
-            <button class="fav-btn unset" id="favWorkBtn" type="button">
-              <span style="font-size:18px">💼</span>
-              <div class="fav-btn-txt"><b>ที่ทำงาน</b><small id="favWorkSub">แตะเพื่อตั้งค่า</small></div>
-            </button>
-          </div>
-          <div class="poi-row">
-            <button class="poi-chip" type="button" data-poi="ปั๊มน้ำมัน">⛽ ปั๊มน้ำมัน</button>
-            <button class="poi-chip" type="button" data-poi="คาเฟ่">☕ คาเฟ่</button>
-            <button class="poi-chip" type="button" data-poi="7-Eleven">🏪 7-Eleven</button>
-            <button class="poi-chip" type="button" data-poi="โรงพยาบาล">🏥 โรงพยาบาล</button>
-          </div>
+          <details class="search-drawer" id="searchDrawer">
+            <summary>
+              <span>📍 บ้าน · ที่ทำงาน · สถานที่ใกล้ฉัน</span>
+              <span class="drawer-chev">▾</span>
+            </summary>
+            <div class="search-drawer-body">
+              <div class="fav-row">
+                <button class="fav-btn unset" id="favHomeBtn" type="button">
+                  <span style="font-size:18px">🏠</span>
+                  <div class="fav-btn-txt"><b>กลับบ้าน</b><small id="favHomeSub">แตะเพื่อตั้งค่า</small></div>
+                </button>
+                <button class="fav-btn unset" id="favWorkBtn" type="button">
+                  <span style="font-size:18px">💼</span>
+                  <div class="fav-btn-txt"><b>ที่ทำงาน</b><small id="favWorkSub">แตะเพื่อตั้งค่า</small></div>
+                </button>
+              </div>
+              <div class="poi-row">
+                <button class="poi-chip" type="button" data-poi="ปั๊มน้ำมัน">⛽ ปั๊มน้ำมัน</button>
+                <button class="poi-chip" type="button" data-poi="คาเฟ่">☕ คาเฟ่</button>
+                <button class="poi-chip" type="button" data-poi="7-Eleven">🏪 7-Eleven</button>
+                <button class="poi-chip" type="button" data-poi="โรงพยาบาล">🏥 โรงพยาบาล</button>
+              </div>
+            </div>
+          </details>
         </div>
 
         <!-- Ocean-Blue Ready-to-Ride Hero Card -->
@@ -389,7 +393,7 @@
   <!-- ============================================================
        ADAPTIVE FULLSCREEN RIDE HUD (Portrait + Landscape + Day/Night)
        ============================================================ -->
-  <div class="ride-hud" id="rideHud" data-view="home" data-hud="day" data-safe="false">
+  <div class="ride-hud" id="rideHud" data-view="home" data-hud="night" data-safe="false">
     <div class="hud-body">
       <!-- Live Map Wrap (Shared DOM node moved here seamlessly) -->
       <div class="hud-map-wrap" id="hudMapWrap">
@@ -541,7 +545,6 @@
     <aside class="hud-dock" aria-label="แถบควบคุมโหมดขับขี่">
       <div class="hud-dock-status">
         <div class="hud-clock" id="hudClock">--:--</div>
-        <div class="hud-batt" id="hudBatt">87%</div>
       </div>
       <div class="hud-dock-apps" id="hudDockApps"></div>
       <div class="hud-dock-end">

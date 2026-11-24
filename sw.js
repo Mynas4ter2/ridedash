@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ridedash-v6';
+const CACHE_NAME = 'ridedash-v7';
 const APP_SHELL = [
   './',
   './index.html',

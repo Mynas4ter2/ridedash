@@ -43,8 +43,7 @@ import {
   renderMediaUi,
   renderMediaProgress,
   renderWeatherUi,
-  renderHudPhoneGrid,
-  renderHudClockAndBattery
+  renderHudPhoneGrid
 } from './dash.js';
 
 const $ = (id) => document.getElementById(id);
@@ -53,6 +52,8 @@ let deferredInstallPrompt = null;
 
 function applyTheme() {
   document.documentElement.setAttribute('data-theme', state.theme);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', state.theme === 'dark' ? '#080B11' : '#F7F3EC');
   const btn = $('headerThemeBtn');
   if (btn) {
     btn.textContent = state.theme === 'dark' ? '☀️' : '🌙';
@@ -266,11 +267,11 @@ function renderContactsSettings() {
 function renderSettingsUi() {
   const isReal = state.gpsMode === 'gps';
 
-  // Header GPS Pill (concise so all 3 pills always fit 1 row on 360px phones)
+  // Header GPS Pill
   const hPill = $('gpsHeaderPill');
   if (hPill) {
     hPill.className = 'status-pill ' + (isReal ? 'gps-real' : 'gps-sim');
-    if ($('gpsHeaderText')) $('gpsHeaderText').textContent = isReal ? 'GPS จริง' : 'จำลอง';
+    if ($('gpsHeaderText')) $('gpsHeaderText').textContent = isReal ? 'GPS จริง' : 'โหมดจำลอง';
   }
 
   if ($('autoTripChk')) $('autoTripChk').checked = !!state.autoTripOnNav;
@@ -340,7 +341,7 @@ function renderSettingsUi() {
 
   const themeRow = $('themeRow');
   if (themeRow) {
-    themeRow.innerHTML = [['light', 'ครีมอุ่น-ฟ้า (แนะนำ)'], ['dark', 'โหมดมืด']].map(([id, label]) =>
+    themeRow.innerHTML = [['dark', 'โหมดมืด (แนะนำ)'], ['light', 'โหมดสว่าง (ครีมอุ่น)']].map(([id, label]) =>
       `<button class="chip" type="button" aria-pressed="${state.theme === id}" data-th="${id}">${label}</button>`
     ).join('');
     themeRow.querySelectorAll('[data-th]').forEach((b) => {
@@ -355,7 +356,7 @@ function renderSettingsUi() {
 
   const hudRow = $('hudThemeRow');
   if (hudRow) {
-    hudRow.innerHTML = [['day', '☀️ กลางวัน (สว่าง)'], ['night', '🌙 กลางคืน (ตัดแสง)']].map(([id, label]) =>
+    hudRow.innerHTML = [['night', '🌙 กลางคืน (ตัดแสง)'], ['day', '☀️ กลางวัน (สว่าง)']].map(([id, label]) =>
       `<button class="chip" type="button" aria-pressed="${state.hudTheme === id}" data-ht="${id}">${label}</button>`
     ).join('');
     hudRow.querySelectorAll('[data-ht]').forEach((b) => {
@@ -366,33 +367,6 @@ function renderSettingsUi() {
         renderSettingsUi();
       };
     });
-  }
-}
-
-function initBattery() {
-  const updateUI = () => {
-    const pct = Math.round(state.battery.level * 100);
-    const cls = state.battery.level <= 0.2 ? 'low' : state.battery.level <= 0.5 ? 'mid' : 'good';
-    if ($('battIcon')) $('battIcon').className = 'batt ' + cls;
-    if ($('battFill')) $('battFill').style.width = `${pct}%`;
-    if ($('battTxt')) $('battTxt').textContent = `${pct}%${state.battery.charging ? '⚡' : ''}`;
-    renderHudClockAndBattery();
-  };
-
-  if (navigator.getBattery) {
-    navigator.getBattery().then((b) => {
-      state.battery.real = true;
-      const sync = () => {
-        state.battery.level = b.level;
-        state.battery.charging = b.charging;
-        updateUI();
-      };
-      sync();
-      b.onlevelchange = sync;
-      b.onchargingchange = sync;
-    }).catch(updateUI);
-  } else {
-    updateUI();
   }
 }
 
@@ -690,7 +664,6 @@ initDash();
 initTrip();
 initFuel();
 initGps();
-initBattery();
 bindEvents();
 
 renderDockSettings();
