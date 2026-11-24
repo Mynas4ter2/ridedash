@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ridedash-v3';
+const CACHE_NAME = 'ridedash-v4';
 const APP_SHELL = [
   './',
   './index.html',
@@ -8,6 +8,7 @@ const APP_SHELL = [
   './css/companion.css',
   './css/dash.css',
   './js/store.js',
+  './js/nav.js',
   './js/gps.js',
   './js/weather.js',
   './js/map.js',
@@ -39,15 +40,11 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // Network-first for external APIs and map tiles
   if (url.origin !== self.location.origin) {
-    event.respondWith(
-      fetch(req).catch(() => caches.match(req))
-    );
+    event.respondWith(fetch(req).catch(() => caches.match(req)));
     return;
   }
 
-  // Stale-while-revalidate for local app shell
   event.respondWith(
     caches.match(req).then((cached) => {
       const fetchPromise = fetch(req).then((res) => {
