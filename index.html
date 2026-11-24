@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="th" data-theme="auto">
+<html lang="th" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0A84FF">
+  <meta name="theme-color" content="#0284C7">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>RideDash — Personal Riding Dashboard</title>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>RideDash — Mobile Riding Assistant</title>
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
   <link rel="apple-touch-icon" href="./icons/icon.svg">
@@ -19,367 +19,194 @@
   <link rel="stylesheet" href="./css/dash.css">
 </head>
 <body>
-  <main class="app-shell">
-    <header class="top-header">
+
+  <!-- ============================================================
+       MOBILE-ONLY COMPANION SHELL (Warm Cream + Ocean Blue)
+       ============================================================ -->
+  <div class="mobile-app">
+    <header class="app-header">
       <div class="brand">
         <img class="brand-mark" src="./icons/icon.svg" alt="RideDash">
-        <div>
-          <h1>RideDash</h1>
-          <p class="sub">Personal Riding Dashboard</p>
-        </div>
+        <span class="brand-name">RideDash</span>
       </div>
-      <div class="header-actions">
-        <button class="pill pill-btn" id="gpsHeaderPill" type="button" title="สลับระหว่าง GPS จริง กับโหมดจำลอง">
-          <i class="dot sim" id="gpsHeaderDot"></i>
-          <span id="gpsHeaderText">โหมดจำลอง</span>
+      <div class="header-pills">
+        <button class="status-pill gps-sim" id="gpsHeaderPill" type="button" title="แตะเพื่อสลับระหว่าง GPS จริง กับโหมดจำลอง">
+          <i class="status-dot"></i>
+          <span id="gpsHeaderText">จำลอง</span>
         </button>
-        <div class="pill" id="battPill" title="แบตเตอรี่">
+        <div class="status-pill batt-chip" title="แบตเตอรี่">
           <span class="batt good" id="battIcon"><span class="batt-fill" id="battFill" style="width:87%"></span></span>
           <span id="battTxt">87%</span>
         </div>
-        <button class="pill pill-btn" id="themeBtn" type="button" title="สลับธีมสี" aria-label="สลับธีม">◐</button>
-        <button class="pill pill-btn pill-primary" id="rideLaunchTop" type="button">เต็มจอขับขี่</button>
+        <button class="icon-pill-btn" id="headerThemeBtn" type="button" title="สลับโหมดมืด/สว่าง" aria-label="สลับโหมดมืดหรือสว่าง">🌙</button>
       </div>
     </header>
 
-    <div class="layout">
-      <!-- LEFT / TOP: LIVE DASHBOARD STAGE -->
-      <section class="stage-col">
-        <div class="device-frame">
-          <div class="device-bar">
-            <span>RideDash Display</span>
-            <div class="device-cam"></div>
-            <span id="deviceRatioLabel">5:3</span>
+    <main class="app-body">
+      <!-- TAB 0: HOME (Clean, Minimalist, Instant Clarity) -->
+      <section class="tab-view" data-tab="0">
+        <!-- Where to? Search Card -->
+        <div class="search-card">
+          <div class="search-bar">
+            <span style="color:var(--acc);font-size:16px">🔍</span>
+            <input id="homeSearchInput" type="search" placeholder="จะไปไหนดี? เช่น ปั๊ม ปตท, สยาม...">
+            <button class="search-go" id="homeSearchGo" type="button">ค้นหา</button>
           </div>
+          <div class="fav-row">
+            <button class="fav-btn unset" id="favHomeBtn" type="button">
+              <span style="font-size:18px">🏠</span>
+              <div class="fav-btn-txt"><b>กลับบ้าน</b><small id="favHomeSub">แตะเพื่อตั้งค่า</small></div>
+            </button>
+            <button class="fav-btn unset" id="favWorkBtn" type="button">
+              <span style="font-size:18px">💼</span>
+              <div class="fav-btn-txt"><b>ที่ทำงาน</b><small id="favWorkSub">แตะเพื่อตั้งค่า</small></div>
+            </button>
+          </div>
+          <div class="poi-row">
+            <button class="poi-chip" type="button" data-poi="ปั๊มน้ำมัน">⛽ ปั๊มน้ำมัน</button>
+            <button class="poi-chip" type="button" data-poi="คาเฟ่">☕ คาเฟ่</button>
+            <button class="poi-chip" type="button" data-poi="7-Eleven">🏪 7-Eleven</button>
+            <button class="poi-chip" type="button" data-poi="โรงพยาบาล">🏥 โรงพยาบาล</button>
+          </div>
+        </div>
 
-          <div class="dash-viewport" id="dashViewport" data-fit="ratio">
-            <div class="dash-surface" id="dashSurface">
-              <!-- Persistent Left Dock -->
-              <aside class="dash-dock" aria-label="แถบแอปด่วน">
-                <div class="dock-status">
-                  <div class="dock-clock" id="dockClock">--:--</div>
-                  <div class="dock-substatus"><span id="dockBatt">87%</span></div>
-                </div>
-                <div class="dock-apps" id="dockApps"></div>
-                <button class="dock-btn dock-home active" id="dockHomeBtn" type="button" aria-label="หน้าโฮม"></button>
-                <button class="dock-btn dock-exit" id="rideExitBtn" type="button" title="ออกจากโหมดขับขี่" aria-label="ออกจากโหมดขับขี่">✕</button>
-              </aside>
-
-              <!-- Main Screen Area -->
-              <section class="dash-main" id="dashMain" data-view="home" data-safe="false">
-                <!-- Persistent Real Leaflet Map (shared by Home & Map screen) -->
-                <div class="dash-map-slot">
-                  <div id="liveMap"></div>
-
-                  <div class="map-overlay-top">
-                    <div class="turn-banner" id="turnBanner" title="แตะเพื่อค้นหาจุดหมาย">
-                      <svg class="turn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M7 21V12a3 3 0 0 1 3-3h8"/>
-                        <path d="M14 5l4 4-4 4"/>
-                      </svg>
-                      <div class="turn-text">
-                        <b id="turnDist">พร้อมนำทาง</b>
-                        <small id="turnDesc">แตะค้นหาเพื่อเลือกจุดหมาย</small>
-                      </div>
-                    </div>
-                    <div class="safe-chip">🛡️ โหมดปลอดภัย</div>
-                  </div>
-
-                  <div class="map-search-panel" id="mapSearchPanel" hidden>
-                    <div class="map-search-row">
-                      <input class="map-search-input" id="mapSearchInput" type="search" placeholder="ค้นหาสถานที่ เช่น สยามพารากอน, ปั๊ม ปตท...">
-                      <button class="map-fab active" id="mapSearchGo" type="button">ค้นหา</button>
-                      <button class="map-fab" id="mapSearchClose" type="button">✕</button>
-                    </div>
-                    <div class="map-search-results" id="mapSearchResults"></div>
-                  </div>
-
-                  <div class="map-overlay-bottom">
-                    <div class="map-speed-pill">
-                      <strong id="mapSpeed">38</strong>
-                      <span id="mapHeading">km/h</span>
-                    </div>
-                    <div class="map-tools">
-                      <button class="map-fab" id="mapSearchBtn" type="button" title="ค้นหาเส้นทาง">🔍 ค้นหา</button>
-                      <button class="map-fab" id="mapClearRouteBtn" type="button" hidden>✕ ล้างเส้นทาง</button>
-                      <button class="map-fab active" id="mapFollowBtn" type="button" title="ติดตามตำแหน่งปัจจุบัน">◎</button>
-                      <button class="map-fab" id="mapGmapsBtn" type="button" title="เปิดใน Google Maps">Maps ↗</button>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Right Column on Home Split View -->
-                <div class="dash-side">
-                  <div class="dash-card clickable" id="homeSpeedCard" title="แตะเพื่อเปิดหน้าทริป">
-                    <div class="speed-card-top">
-                      <div class="speed-readout">
-                        <span class="speed-num" id="homeSpeed">38</span>
-                        <span class="speed-unit">km/h</span>
-                      </div>
-                      <div class="weather-mini">
-                        <span id="homeWeatherTemp">⛅ --°</span>
-                        <small id="homeWeatherDesc">กำลังโหลด</small>
-                      </div>
-                    </div>
-                    <div class="speed-card-foot">
-                      <span id="homeHeading">↗ ตะวันออกเฉียงเหนือ 45°</span>
-                      <span id="homeTripMini">0.0 กม. · 00:00</span>
-                    </div>
-                  </div>
-
-                  <div class="dash-card clickable" id="homeMediaCard" title="แตะเพื่อเปิดหน้าเพลง">
-                    <div class="media-mini-head">
-                      <div class="media-art">♪</div>
-                      <div class="media-meta">
-                        <b id="miniMediaTitle">Groove Salad</b>
-                        <small id="miniMediaArtist">SomaFM · วิทยุออนไลน์</small>
-                      </div>
-                    </div>
-                    <div class="media-controls">
-                      <button class="media-btn" id="miniPrevBtn" type="button" aria-label="เพลงก่อนหน้า">
-                        <svg viewBox="0 0 24 24"><rect x="5" y="5" width="2.5" height="14" rx="1"/><polygon points="19,5 9,12 19,19"/></svg>
-                      </button>
-                      <button class="media-btn play" id="miniPlayBtn" type="button" aria-label="เล่นหรือหยุด"></button>
-                      <button class="media-btn" id="miniNextBtn" type="button" aria-label="เพลงถัดไป">
-                        <svg viewBox="0 0 24 24"><rect x="16.5" y="5" width="2.5" height="14" rx="1"/><polygon points="5,5 15,12 5,19"/></svg>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Full Music Screen -->
-                <div class="dash-screen" data-screen="music">
-                  <div class="screen-head">
-                    <h2>เครื่องเล่นเพลง</h2>
-                    <div style="display:flex;gap:6px;flex-wrap:wrap">
-                      <label class="dash-pill-btn primary" style="cursor:pointer">
-                        + เลือกเพลงในเครื่อง
-                        <input id="localAudioInput" type="file" accept="audio/*" multiple hidden>
-                      </label>
-                      <a class="dash-pill-btn" href="https://open.spotify.com" target="_blank" rel="noopener">Spotify ↗</a>
-                      <a class="dash-pill-btn" href="https://music.youtube.com" target="_blank" rel="noopener">YT Music ↗</a>
-                    </div>
-                  </div>
-                  <div class="music-full-body">
-                    <div class="music-full-art">♪</div>
-                    <div class="music-full-info">
-                      <div>
-                        <div class="music-full-title" id="fullMediaTitle">Groove Salad</div>
-                        <div class="music-full-artist" id="fullMediaArtist">SomaFM · วิทยุออนไลน์</div>
-                      </div>
-                      <div class="music-progress" id="mediaProgressBar">
-                        <div class="music-progress-fill" id="mediaProgressFill"></div>
-                      </div>
-                      <div class="media-controls" style="justify-content:flex-start;gap:14px">
-                        <button class="media-btn" id="fullPrevBtn" type="button" aria-label="ก่อนหน้า">
-                          <svg viewBox="0 0 24 24"><rect x="5" y="5" width="2.5" height="14" rx="1"/><polygon points="19,5 9,12 19,19"/></svg>
-                        </button>
-                        <button class="media-btn play" id="fullPlayBtn" type="button" aria-label="เล่นหรือหยุด"></button>
-                        <button class="media-btn" id="fullNextBtn" type="button" aria-label="ถัดไป">
-                          <svg viewBox="0 0 24 24"><rect x="16.5" y="5" width="2.5" height="14" rx="1"/><polygon points="5,5 15,12 5,19"/></svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="music-presets" id="musicPresets"></div>
-                </div>
-
-                <!-- Full Trip Screen -->
-                <div class="dash-screen" data-screen="trip">
-                  <div class="screen-head">
-                    <h2>มาตรวัดและทริป</h2>
-                    <span id="tripHeroHeading" style="font-size:13px;color:rgba(255,255,255,.7)">↗ ทิศตะวันออกเฉียงเหนือ</span>
-                  </div>
-                  <div class="trip-hero">
-                    <strong id="tripHeroSpeed">38</strong>
-                    <span>km/h</span>
-                  </div>
-                  <div class="trip-metrics">
-                    <div class="trip-box"><b id="dashTripDist">0.00</b><small>กม.</small></div>
-                    <div class="trip-box"><b id="dashTripTime">00:00</b><small>เวลา</small></div>
-                    <div class="trip-box"><b id="dashTripAvg">0</b><small>เฉลี่ย km/h</small></div>
-                    <div class="trip-box"><b id="dashTripMax">0</b><small>สูงสุด km/h</small></div>
-                  </div>
-                  <div class="trip-actions">
-                    <button class="dash-pill-btn primary" id="dashTripStart" type="button">เริ่มทริป</button>
-                    <button class="dash-pill-btn" id="dashTripPause" type="button" hidden>พัก</button>
-                  </div>
-                </div>
-
-                <!-- Full Phone Speed Dial Screen -->
-                <div class="dash-screen" data-screen="phone">
-                  <div class="screen-head">
-                    <h2>โทรด่วน</h2>
-                    <span style="font-size:12px;color:rgba(255,255,255,.6)">แตะเพื่อโทรออกทันที</span>
-                  </div>
-                  <div class="dial-grid" id="dialGrid"></div>
-                </div>
-
-                <!-- Full Weather Screen -->
-                <div class="dash-screen" data-screen="weather">
-                  <div class="screen-head">
-                    <h2>สภาพอากาศตามพิกัด</h2>
-                    <button class="dash-pill-btn" id="weatherRefreshBtn" type="button">↻ อัปเดต</button>
-                  </div>
-                  <div class="center-panel">
-                    <div id="fullWeatherTemp" style="font-size:clamp(38px,9cqw,72px);font-weight:700">⛅ --°C</div>
-                    <div id="fullWeatherDesc" style="font-size:clamp(16px,3.2cqw,26px);font-weight:600">กำลังโหลด...</div>
-                    <div id="fullWeatherMeta" style="font-size:clamp(12px,2cqw,16px);color:rgba(255,255,255,.65)"></div>
-                  </div>
-                </div>
-
-                <!-- External App Launcher Screen -->
-                <div class="dash-screen" data-screen="ext">
-                  <div class="center-panel">
-                    <div class="ext-icon" id="extAppIcon">S</div>
-                    <h2 id="extAppTitle" style="font-size:clamp(20px,4cqw,34px)">Spotify</h2>
-                    <p style="font-size:clamp(12px,2cqw,15px);color:rgba(255,255,255,.65);max-width:420px">
-                      เว็บเบราว์เซอร์ไม่สามารถฝังหน้าจอแอปภายนอกได้ แตะปุ่มด้านล่างเพื่อเปิดแอปโดยตรง
-                    </p>
-                    <a class="dash-pill-btn primary" id="extAppLaunch" href="#" target="_blank" rel="noopener">เปิดแอป</a>
-                  </div>
-                </div>
-              </section>
+        <!-- Ocean-Blue Ready-to-Ride Hero Card -->
+        <div class="hero-card">
+          <div class="hero-top">
+            <div>
+              <div class="hero-eyebrow">ความเร็วปัจจุบัน</div>
+              <div class="hero-speed-line">
+                <strong id="heroSpeed">0</strong>
+                <span>km/h</span>
+              </div>
+            </div>
+            <div class="hero-weather">
+              <b id="heroWeatherTemp">⛅ --°C</b>
+              <small id="heroWeatherDesc">กำลังโหลดอากาศ</small>
             </div>
           </div>
+
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <small>พิกัด GPS</small>
+              <b id="heroGpsVal">โหมดจำลอง</b>
+            </div>
+            <div class="hero-stat">
+              <small>ทริปปัจจุบัน</small>
+              <b id="heroTripVal">0.0 กม.</b>
+            </div>
+            <div class="hero-stat">
+              <small>นำทางเสียง</small>
+              <b id="heroVoiceVal">เสียงไทยเปิด</b>
+            </div>
+          </div>
+
+          <button class="hero-cta" id="heroStartRide" type="button">
+            <span>เข้าสู่หน้าจอขับขี่เต็มจอ</span>
+            <span>→</span>
+          </button>
         </div>
 
-        <div class="preview-meta">
-          <span id="previewMetaText">สัดส่วน 5:3 (Zontes) · แตะใช้งานบนจอได้ทันที</span>
-          <button class="btn btn-sm" id="gpsQuickToggle" type="button">เปิด GPS จริง</button>
+        <!-- Compact Music Bar (Indigo Semantic Accent) -->
+        <div class="music-mini-card">
+          <div class="music-mini-icon">♪</div>
+          <div class="music-mini-info">
+            <b id="homeMediaTitle">Groove Salad</b>
+            <small id="homeMediaSub">SomaFM · วิทยุออนไลน์</small>
+          </div>
+          <div class="mini-ctrl-row">
+            <button class="round-btn media-play" id="homePlayBtn" type="button" aria-label="เล่นหรือหยุด"></button>
+            <button class="round-btn" id="homeNextBtn" type="button" aria-label="เพลงถัดไป">
+              <svg viewBox="0 0 24 24"><rect x="16.5" y="5" width="2.5" height="14" rx="1"/><polygon points="5,5 15,12 5,19"/></svg>
+            </button>
+          </div>
         </div>
 
-        <div class="card handlebar-card">
+        <!-- Quick Speed Dial Card (Emerald Semantic Accent) -->
+        <div class="card" style="gap:10px;padding:13px 14px">
           <div class="card-head">
-            <h2 class="card-title">ควบคุมด้วยปุ่ม / คีย์บอร์ด <small id="fcap"></small></h2>
+            <h2 class="section-title"><span class="section-dot ok"></span>โทรด่วน</h2>
+            <span class="note">แตะเพื่อโทรออกทันที</span>
           </div>
-          <div class="pad-grid">
-            <button class="btn" id="bL" type="button">◀ ซ้าย</button>
-            <button class="btn" id="bR" type="button">ขวา ▶</button>
-            <button class="btn btn-primary" id="bOk" type="button">OK</button>
-            <button class="btn" id="bBack" type="button">โฮม</button>
-          </div>
-          <p class="note" id="padToast">รองรับทั้งแตะบนจอโดยตรง ปุ่มด้านบน และลูกศรคีย์บอร์ด / รีโมต Bluetooth</p>
+          <div class="quick-dial-row" id="homeQuickDial"></div>
         </div>
       </section>
 
-      <!-- RIGHT / BOTTOM: COMPANION CONTROLS -->
-      <section class="ctl-col">
-        <!-- TAB 0: DOCK SHORTCUTS & SPEED DIAL -->
-        <div class="tab-pane" data-tab="0">
-          <div class="card">
-            <div class="card-head">
-              <h2 class="card-title">ทางลัดบนแถบซ้าย (Dock)</h2>
-              <span class="badge" id="dockCount">4/4</span>
+      <!-- TAB 1: MAP & LIVE NAVIGATION -->
+      <section class="tab-view" data-tab="1" hidden>
+        <div class="map-tab-stage" id="mapTabStage">
+          <div id="liveMap"></div>
+
+          <div class="map-float-search">
+            <div class="map-float-bar">
+              <span style="color:var(--acc)">🔍</span>
+              <input id="mapSearchInput" type="search" placeholder="ค้นหาจุดหมายปลายทาง...">
+              <button class="search-go" id="mapSearchGo" type="button">ไป</button>
             </div>
-            <ul class="list" id="dockMineList"></ul>
-            <button class="btn btn-primary btn-full" id="addAppBtn" type="button">+ เพิ่มทางลัดแอป</button>
-            <div id="appPicker" hidden>
-              <input class="input" id="appSearch" type="search" placeholder="ค้นหาแอป...">
-              <ul class="list" id="dockAllList" style="margin-top:8px"></ul>
-            </div>
-            <p class="note" id="dockMsg">เลือกได้สูงสุด 4 แอป และแอปวิดีโอถูกตัดออกเพื่อความปลอดภัยระหว่างขับขี่</p>
+            <div class="map-results-box" id="mapResultsBox" hidden></div>
           </div>
 
-          <div class="card">
-            <div class="card-head">
-              <h2 class="card-title">เบอร์โทรด่วนบนจอขับขี่</h2>
-            </div>
-            <ul class="list" id="contactList"></ul>
-            <div class="grid2">
-              <input class="input" id="contactNameIn" type="text" maxlength="24" placeholder="ชื่อ เช่น บ้าน / เพื่อน">
-              <input class="input" id="contactTelIn" type="tel" maxlength="20" placeholder="เบอร์โทร เช่น 0812345678">
-            </div>
-            <button class="btn btn-full" id="contactAddBtn" type="button">+ เพิ่มเบอร์โทรด่วน</button>
-          </div>
-        </div>
+          <button class="map-recenter-fab" id="mapRecenterBtn" type="button" title="กลับไปยังตำแหน่งปัจจุบัน">◎</button>
 
-        <!-- TAB 1: DISPLAY & MAP -->
-        <div class="tab-pane" data-tab="1" hidden>
-          <div class="card">
-            <h2 class="card-title">รูปแบบแผนที่</h2>
-            <div class="chip-row" id="mapStyleRow"></div>
-            <p class="note">แผนที่ใช้ข้อมูลฟรีจาก OpenStreetMap + OSRM ไม่ต้องใช้ API Key และกดส่งต่อไป Google Maps ได้ทันที</p>
-          </div>
-
-          <div class="card">
-            <h2 class="card-title">สัดส่วนหน้าจอแสดงผล</h2>
-            <div class="chip-row" id="ratioRow"></div>
-            <h2 class="card-title" style="margin-top:4px">ธีมหน้าตั้งค่า</h2>
-            <div class="chip-row" id="themeRow"></div>
-          </div>
-
-          <div class="card">
-            <details>
-              <summary class="card-title" style="cursor:pointer">วิธีเปิด Mirror ขึ้นจอรถ / ติดตั้งเป็นแอป (PWA)</summary>
-              <div class="note" style="margin-top:10px">
-                1. เปิดลิงก์เว็บ (HTTPS บน GitHub Pages) บนมือถือ แล้วเลือก <b>เพิ่มลงหน้าจอโฮม (Add to Home Screen)</b><br>
-                2. แตะปุ่มกลมตรงกลาง <b>ขับขี่</b> เพื่อเข้าสู่โหมดเต็มจอแนวนอน + กันหน้าจอดับ (Wake Lock)<br>
-                3. หากใช้กับจอรถ (เช่น Zontes 368K MotoPlay / EasyConnect) ให้เลือกสัดส่วน <b>5:3</b> แล้วแชร์หน้าจอมือถือตามปกติ
+          <!-- Route Preview Sheet -->
+          <div class="route-sheet" id="routeSheet" hidden>
+            <div class="route-sheet-top">
+              <div>
+                <div class="route-sheet-title" id="routeSheetTitle">จุดหมาย</div>
+                <div class="route-sheet-meta" id="routeSheetMeta">กำลังคำนวณ...</div>
               </div>
-            </details>
+              <button class="icon-btn" id="routeCloseBtn" type="button" aria-label="ปิดเส้นทาง">✕</button>
+            </div>
+            <div class="route-sheet-actions">
+              <button class="btn btn-primary btn-full" id="routeStartBtn" type="button">▶ เริ่มนำทางด้วยเสียง</button>
+              <button class="btn btn-warn btn-sm" id="routeSimBtn" type="button" style="flex:1">🧪 จำลองขี่</button>
+              <button class="btn btn-sm" id="routeGmapsBtn" type="button" style="flex:1">Google Maps ↗</button>
+            </div>
+            <div class="route-fav-row">
+              <button class="btn btn-sm" id="saveFavHomeBtn" type="button" style="flex:1">⭐ ตั้งเป็นบ้าน</button>
+              <button class="btn btn-sm" id="saveFavWorkBtn" type="button" style="flex:1">⭐ ตั้งเป็นที่ทำงาน</button>
+            </div>
           </div>
         </div>
+      </section>
 
-        <!-- TAB 2: SYSTEM, GPS & SAFE MODE -->
-        <div class="tab-pane" data-tab="2" hidden>
-          <div class="card">
-            <h2 class="card-title">แหล่งสัญญาณความเร็ว & พิกัด</h2>
-            <div class="seg">
-              <button type="button" id="gpsModeReal" class="active-accent" aria-pressed="false">ใช้ GPS จริง</button>
-              <button type="button" id="gpsModeSim" aria-pressed="true">โหมดจำลอง (ทดสอบ)</button>
-            </div>
-            <div class="status-banner acc" id="gpsBanner">โหมดจำลอง (ทดสอบในบ้าน)</div>
-            <label class="field" id="simSpeedField">
-              <span>ความเร็วจำลอง <b id="spdVal">38</b> km/h <small>(ใช้ทดสอบโหมดปลอดภัยและทริป)</small></span>
-              <input id="spdSlider" type="range" min="0" max="140" value="38">
-            </label>
-          </div>
-
-          <div class="card">
-            <h2 class="card-title">โหมดปลอดภัย (Safe Mode)</h2>
-            <div class="seg">
-              <button type="button" id="safeOnBtn" class="active-accent" aria-pressed="true">เปิดใช้งาน</button>
-              <button type="button" id="safeOffBtn" aria-pressed="false">ปิด</button>
-            </div>
-            <div class="status-banner acc" id="safeBanner"></div>
-            <div class="chip-row" id="safeLimitRow"></div>
-            <p class="note">เมื่อความเร็วถึงเกณฑ์ที่กำหนด หน้าจอจะขยายแผนที่ คำแนะนำเลี้ยว และความเร็ว พร้อมซ่อนส่วนที่รบกวนสายตา</p>
-          </div>
-
-          <div class="card">
-            <div class="card-head">
-              <h2 class="card-title">สถานะเครื่องและข้อมูล</h2>
-            </div>
-            <div class="grid2" id="diagGrid"></div>
-            <div class="chip-row">
-              <button class="btn btn-sm" id="exportDataBtn" type="button">สำรองข้อมูล JSON</button>
-              <label class="btn btn-sm" style="cursor:pointer">
-                นำเข้า JSON
-                <input id="importDataInput" type="file" accept="application/json" hidden>
-              </label>
-            </div>
-            <p class="note" id="sysNote">ข้อมูลทริป ค่าน้ำมัน และทางลัดทั้งหมดถูกเก็บไว้ในเครื่องของคุณเท่านั้น</p>
-          </div>
+      <!-- TAB 2: TRIP & FUEL (Clean Segmented Switch — Zero Long Scroll!) -->
+      <section class="tab-view" data-tab="2" hidden>
+        <div class="seg">
+          <button type="button" id="subTripBtn" class="seg-acc" aria-pressed="true">บันทึกทริป</button>
+          <button type="button" id="subFuelBtn" class="seg-acc" aria-pressed="false">คำนวณค่าน้ำมัน</button>
         </div>
 
-        <!-- TAB 3: TRIP & FUEL -->
-        <div class="tab-pane" data-tab="3" hidden>
+        <!-- Sub-Pane: Trip -->
+        <div id="tripSubPane" style="display:flex;flex-direction:column;gap:14px">
           <div class="card">
             <div class="card-head">
-              <h2 class="card-title">ทริปปัจจุบัน</h2>
+              <h2 class="section-title"><span class="section-dot warn"></span>ทริปปัจจุบัน</h2>
               <span class="badge" id="tripBadge">พร้อมใช้งาน</span>
             </div>
             <div class="grid2" id="tripStats"></div>
             <div style="display:flex;gap:8px">
-              <button class="btn btn-primary" id="tripBtnMain" type="button" style="flex:1">เริ่มบันทึกทริป</button>
+              <button class="btn btn-ok" id="tripBtnMain" type="button" style="flex:1">เริ่มบันทึกทริป</button>
               <button class="btn" id="tripBtnPause" type="button" hidden>พัก</button>
               <button class="btn" id="tripBtnReset" type="button">รีเซ็ต</button>
             </div>
           </div>
 
           <div class="card">
-            <h2 class="card-title">คำนวณและบันทึกค่าน้ำมัน</h2>
+            <div class="card-head">
+              <h2 class="section-title"><span class="section-dot"></span>ประวัติทริป</h2>
+              <button class="btn btn-sm btn-danger" id="tripBtnClear" type="button">ล้างทั้งหมด</button>
+            </div>
+            <div class="chip-row" id="tripFilterRow"></div>
+            <ul class="list" id="tripList"></ul>
+            <p class="note" id="tripSummary"></p>
+          </div>
+        </div>
+
+        <!-- Sub-Pane: Fuel -->
+        <div id="fuelSubPane" hidden style="display:flex;flex-direction:column;gap:14px">
+          <div class="card">
+            <h2 class="section-title"><span class="section-dot warn"></span>บันทึกและคำนวณค่าน้ำมัน</h2>
             <div class="edit-banner" id="fuelEditBar" hidden>
               <span id="fuelEditTxt"></span>
               <button class="btn btn-sm" id="fuelCancel" type="button">ยกเลิก</button>
@@ -413,7 +240,7 @@
           </div>
 
           <div class="card">
-            <h2 class="card-title">ประมาณการค่าน้ำมันทริป</h2>
+            <h2 class="section-title"><span class="section-dot"></span>ประมาณการค่าน้ำมันทริป</h2>
             <label class="field">ระยะทางที่จะเดินทาง (กม.)
               <input class="input" id="fuelPlanKm" type="number" inputmode="decimal" min="1" max="9999" step="1" placeholder="เช่น 300">
             </label>
@@ -423,41 +250,125 @@
 
           <div class="card">
             <div class="card-head">
-              <h2 class="card-title">ประวัติเติมน้ำมัน</h2>
+              <h2 class="section-title"><span class="section-dot ok"></span>ประวัติเติมน้ำมัน</h2>
               <div style="display:flex;gap:6px">
-                <button class="btn btn-sm" id="fuelCsv" type="button">คัดลอก CSV</button>
-                <button class="btn btn-sm btn-danger" id="fuelClear" type="button">ล้างทั้งหมด</button>
+                <button class="btn btn-sm" id="fuelCsv" type="button">CSV</button>
+                <button class="btn btn-sm btn-danger" id="fuelClear" type="button">ล้าง</button>
               </div>
             </div>
             <ul class="list" id="fuelLog"></ul>
             <p class="note" id="fuelLogSum"></p>
           </div>
-
-          <div class="card">
-            <div class="card-head">
-              <h2 class="card-title">ประวัติทริป</h2>
-              <button class="btn btn-sm btn-danger" id="tripBtnClear" type="button">ล้างทั้งหมด</button>
-            </div>
-            <div class="chip-row" id="tripFilterRow"></div>
-            <ul class="list" id="tripList"></ul>
-            <p class="note" id="tripSummary"></p>
-          </div>
         </div>
       </section>
-    </div>
 
-    <p class="footer-note">RideDash PWA · Personal Riding Dashboard</p>
-  </main>
+      <!-- TAB 3: SETTINGS (Tidy Grouped Cards with Color Coding) -->
+      <section class="tab-view" data-tab="3" hidden>
+        <div class="card">
+          <h2 class="section-title"><span class="section-dot ok"></span>GPS และเสียงนำทาง</h2>
+          <div class="seg">
+            <button type="button" id="gpsModeReal" class="seg-ok" aria-pressed="false">ใช้ GPS จริง</button>
+            <button type="button" id="gpsModeSim" aria-pressed="true">โหมดจำลอง (ทดสอบ)</button>
+          </div>
+          <div class="status-banner warn" id="gpsBanner">โหมดจำลอง (ทดสอบ)</div>
+          <label class="field" id="simSpeedField">
+            <span>ความเร็วจำลอง <b id="spdVal">45</b> km/h</span>
+            <input id="spdSlider" type="range" min="0" max="140" value="45">
+          </label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-sm" id="voiceToggleBtn" type="button">🔊 เสียงนำทางไทย: เปิด</button>
+            <button class="btn btn-sm btn-primary" id="voiceTestBtn" type="button">ทดลองฟังเสียง</button>
+          </div>
+          <label class="chk">
+            <input type="checkbox" id="autoTripChk" checked> เริ่มบันทึกทริปอัตโนมัติเมื่อเริ่มนำทาง
+          </label>
+        </div>
 
-  <!-- Floating Bottom Navigation -->
+        <div class="card">
+          <h2 class="section-title"><span class="section-dot warn"></span>โหมดปลอดภัย (Safe Mode)</h2>
+          <div class="seg">
+            <button type="button" id="safeOnBtn" class="seg-acc" aria-pressed="true">เปิดใช้งาน</button>
+            <button type="button" id="safeOffBtn" aria-pressed="false">ปิด</button>
+          </div>
+          <div class="status-banner acc" id="safeBanner"></div>
+          <div class="chip-row" id="safeLimitRow"></div>
+          <p class="note">เมื่อความเร็วถึงเกณฑ์ ระบบจะซ่อนแผงเพลงและปุ่มไม่จำเป็น เพื่อให้เห็นแผนที่และคำสั่งเลี้ยวชัดที่สุด</p>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title"><span class="section-dot media"></span>ธีมสีและแผนที่</h2>
+          <div class="field">ธีมแอปหลัก<div class="chip-row" id="themeRow"></div></div>
+          <div class="field">ธีมจอขับขี่เต็มจอ (HUD)<div class="chip-row" id="hudThemeRow"></div></div>
+          <div class="field">รูปแบบแผนที่<div class="chip-row" id="mapStyleRow"></div></div>
+        </div>
+
+        <details class="card-accordion">
+          <summary>
+            <span class="section-title"><span class="section-dot"></span>แอปบนแถบขับขี่ (Dock)</span>
+            <span style="display:flex;align-items:center;gap:8px"><span class="badge" id="dockCount">4/4</span><span class="chev">▾</span></span>
+          </summary>
+          <div class="accordion-body">
+            <ul class="list" id="dockMineList"></ul>
+            <button class="btn btn-primary btn-full" id="addAppBtn" type="button">+ เพิ่มทางลัดแอป</button>
+            <div id="appPicker" hidden>
+              <ul class="list" id="dockAllList"></ul>
+            </div>
+          </div>
+        </details>
+
+        <details class="card-accordion">
+          <summary>
+            <span class="section-title"><span class="section-dot ok"></span>เบอร์โทรด่วน</span>
+            <span class="chev">▾</span>
+          </summary>
+          <div class="accordion-body">
+            <ul class="list" id="contactList"></ul>
+            <div class="grid2">
+              <input class="input" id="contactNameIn" type="text" maxlength="24" placeholder="ชื่อ เช่น บ้าน">
+              <input class="input" id="contactTelIn" type="tel" maxlength="20" placeholder="เบอร์โทร">
+            </div>
+            <button class="btn btn-full" id="contactAddBtn" type="button">+ เพิ่มเบอร์โทรด่วน</button>
+          </div>
+        </details>
+
+        <details class="card-accordion">
+          <summary>
+            <span class="section-title"><span class="section-dot"></span>สำรองข้อมูล & ติดตั้งแอป (PWA)</span>
+            <span class="chev">▾</span>
+          </summary>
+          <div class="accordion-body">
+            <button class="btn btn-primary btn-full" id="pwaInstallBtn" type="button" hidden>📲 ติดตั้ง RideDash ลงหน้าจอโฮม</button>
+            <div class="chip-row">
+              <button class="btn btn-sm" id="exportDataBtn" type="button">สำรองข้อมูล JSON</button>
+              <label class="btn btn-sm" style="cursor:pointer">
+                นำเข้า JSON
+                <input id="importDataInput" type="file" accept="application/json" hidden>
+              </label>
+            </div>
+            <p class="note" id="sysNote">ข้อมูลทริป ค่าน้ำมัน และเบอร์โทรทั้งหมดเก็บในเครื่องของคุณอย่างปลอดภัย (บน iPhone: กด Share → เพิ่มไปยังหน้าจอโฮม)</p>
+          </div>
+        </details>
+
+        <div class="card">
+          <h2 class="section-title"><span class="section-dot ok"></span>ข้อตกลงและความเป็นส่วนตัว</h2>
+          <p class="note">RideDash เก็บข้อมูลทั้งหมดไว้ในเครื่องของคุณเท่านั้น ไม่มีเซิร์ฟเวอร์เก็บข้อมูลส่วนตัว</p>
+          <button class="btn btn-full" id="openLegalBtn" type="button">อ่าน Terms & Privacy อีกครั้ง</button>
+        </div>
+
+        <p class="settings-credit">จัดทำโดย ratchapoom และ Mynas4ter2</p>
+      </section>
+    </main>
+  </div>
+
+  <!-- Floating Mobile Bottom Navigation -->
   <nav class="bottom-nav" aria-label="เมนูหลัก">
     <button class="nav-item active" data-nav="0" type="button">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
-      ทางลัด
+      <svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      หน้าหลัก
     </button>
     <button class="nav-item" data-nav="1" type="button">
-      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
-      จอ/แผนที่
+      <svg viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>
+      แผนที่
     </button>
     <div class="nav-launch-wrap">
       <button class="nav-launch" id="navRideLaunch" type="button" aria-label="เข้าโหมดขับขี่เต็มจอ">
@@ -466,14 +377,211 @@
       </button>
     </div>
     <button class="nav-item" data-nav="2" type="button">
-      <svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>
-      ระบบ
-    </button>
-    <button class="nav-item" data-nav="3" type="button">
       <svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5"/></svg>
       ทริป
     </button>
+    <button class="nav-item" data-nav="3" type="button">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      ตั้งค่า
+    </button>
   </nav>
+
+  <!-- ============================================================
+       ADAPTIVE FULLSCREEN RIDE HUD (Portrait + Landscape + Day/Night)
+       ============================================================ -->
+  <div class="ride-hud" id="rideHud" data-view="home" data-hud="day" data-safe="false">
+    <div class="hud-body">
+      <!-- Live Map Wrap (Shared DOM node moved here seamlessly) -->
+      <div class="hud-map-wrap" id="hudMapWrap">
+        <div class="hud-turn-bar">
+          <div class="hud-turn-arrow" id="hudTurnIcon"></div>
+          <div class="hud-turn-info">
+            <b id="hudTurnDist">พร้อมนำทาง</b>
+            <small id="hudTurnText">ค้นหาจุดหมายในแท็บแผนที่หรือหน้าหลัก</small>
+          </div>
+          <div class="hud-turn-actions">
+            <button class="hud-mini-btn" id="hudVoiceToggle" type="button" title="เปิด/ปิดเสียงนำทาง">🔊</button>
+            <button class="hud-mini-btn" id="hudThemeToggle" type="button" title="สลับโหมดกลางวัน/กลางคืน">🌙</button>
+          </div>
+        </div>
+
+        <div class="hud-map-bottom">
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
+            <div class="hud-safe-pill">🛡️ โหมดปลอดภัย</div>
+            <div class="hud-eta-pill" id="hudEtaPill" hidden></div>
+          </div>
+          <div class="hud-map-fabs">
+            <button class="hud-fab danger" id="hudStopNavBtn" type="button" hidden>■ หยุด</button>
+            <button class="hud-fab active" id="hudFollowBtn" type="button" title="ติดตามตำแหน่ง">◎</button>
+            <button class="hud-fab" id="hudGmapsBtn" type="button">Maps ↗</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compact Driving Strip (Speed + Media) -->
+      <div class="hud-strip">
+        <div class="hud-tile" id="hudSpeedTile" style="cursor:pointer">
+          <div class="hud-speed-row">
+            <span class="hud-speed-val" id="hudSpeed">0</span>
+            <span class="hud-speed-unit">km/h</span>
+          </div>
+          <div class="hud-speed-meta">
+            <span id="hudHeading">↗ NE 45°</span>
+            <span id="hudTripMini">0.0 กม. · 00:00</span>
+          </div>
+        </div>
+
+        <div class="hud-tile hud-media-tile" id="hudMediaTile" style="cursor:pointer">
+          <div class="hud-media-top">
+            <div class="hud-media-art">♪</div>
+            <div class="hud-media-txt">
+              <b id="hudMediaTitle">Groove Salad</b>
+              <small id="hudMediaSub">SomaFM</small>
+            </div>
+          </div>
+          <div class="hud-media-ctrls">
+            <button class="hud-mbtn" id="hudPrevBtn" type="button" aria-label="ก่อนหน้า">
+              <svg viewBox="0 0 24 24"><rect x="5" y="5" width="2.5" height="14" rx="1"/><polygon points="19,5 9,12 19,19"/></svg>
+            </button>
+            <button class="hud-mbtn play" id="hudPlayBtn" type="button" aria-label="เล่นหรือหยุด"></button>
+            <button class="hud-mbtn" id="hudNextBtn" type="button" aria-label="ถัดไป">
+              <svg viewBox="0 0 24 24"><rect x="16.5" y="5" width="2.5" height="14" rx="1"/><polygon points="5,5 15,12 5,19"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Full Music HUD Screen -->
+      <div class="hud-screen" data-screen="music">
+        <div class="hud-screen-head">
+          <h2>เครื่องเล่นเพลง</h2>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <label class="btn btn-sm btn-primary" style="cursor:pointer">
+              + เลือกเพลงในเครื่อง
+              <input id="localAudioInput" type="file" accept="audio/*" multiple hidden>
+            </label>
+            <a class="btn btn-sm" href="https://open.spotify.com" target="_blank" rel="noopener">Spotify ↗</a>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div id="fullMediaTitle" style="font-size:24px;font-weight:700">Groove Salad</div>
+            <div id="fullMediaArtist" style="font-size:14px;color:var(--hud-muted)">SomaFM</div>
+          </div>
+          <div class="hud-progress" id="mediaProgressBar"><div class="hud-progress-fill" id="mediaProgressFill"></div></div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <button class="hud-mbtn" id="fullPrevBtn" type="button" aria-label="ก่อนหน้า">
+              <svg viewBox="0 0 24 24"><rect x="5" y="5" width="2.5" height="14" rx="1"/><polygon points="19,5 9,12 19,19"/></svg>
+            </button>
+            <button class="hud-mbtn play" id="fullPlayBtn" type="button" style="width:52px;height:52px" aria-label="เล่นหรือหยุด"></button>
+            <button class="hud-mbtn" id="fullNextBtn" type="button" aria-label="ถัดไป">
+              <svg viewBox="0 0 24 24"><rect x="16.5" y="5" width="2.5" height="14" rx="1"/><polygon points="5,5 15,12 5,19"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="chip-row" id="musicPresets"></div>
+      </div>
+
+      <!-- Full Trip HUD Screen -->
+      <div class="hud-screen" data-screen="trip">
+        <div class="hud-screen-head">
+          <h2>มาตรวัดและทริป</h2>
+          <span id="tripHeroHeading" style="font-size:13px;color:var(--hud-muted)">↗ NE</span>
+        </div>
+        <div style="text-align:center">
+          <strong id="tripHeroSpeed" style="font-size:74px;line-height:0.95;letter-spacing:-0.04em">0</strong>
+          <span style="font-size:18px;color:var(--hud-muted);font-weight:600"> km/h</span>
+        </div>
+        <div class="grid2">
+          <div class="stat-tile"><small>ระยะทาง (กม.)</small><b id="dashTripDist">0.00</b></div>
+          <div class="stat-tile"><small>เวลา</small><b id="dashTripTime">00:00</b></div>
+          <div class="stat-tile"><small>เฉลี่ย (km/h)</small><b id="dashTripAvg">0</b></div>
+          <div class="stat-tile"><small>สูงสุด (km/h)</small><b id="dashTripMax">0</b></div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center">
+          <button class="btn btn-ok" id="dashTripStart" type="button" style="min-width:130px">เริ่มทริป</button>
+          <button class="btn" id="dashTripPause" type="button" hidden>พัก</button>
+        </div>
+      </div>
+
+      <!-- Full Phone HUD Screen -->
+      <div class="hud-screen" data-screen="phone">
+        <div class="hud-screen-head">
+          <h2>โทรด่วน</h2>
+          <span style="font-size:12.5px;color:var(--hud-muted)">แตะเพื่อโทรออกทันที</span>
+        </div>
+        <div class="hud-dial-grid" id="hudDialGrid"></div>
+      </div>
+
+      <!-- Full Weather HUD Screen -->
+      <div class="hud-screen" data-screen="weather">
+        <div class="hud-screen-head">
+          <h2>สภาพอากาศ</h2>
+          <button class="btn btn-sm" id="weatherRefreshBtn" type="button">↻ อัปเดต</button>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center">
+          <div id="fullWeatherTemp" style="font-size:56px;font-weight:700">⛅ --°C</div>
+          <div id="fullWeatherDesc" style="font-size:20px;font-weight:600">กำลังโหลด...</div>
+          <div id="fullWeatherMeta" style="font-size:14px;color:var(--hud-muted)"></div>
+        </div>
+      </div>
+
+      <!-- External App Launcher HUD Screen -->
+      <div class="hud-screen" data-screen="ext">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center">
+          <div id="extAppIcon" style="width:78px;height:78px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;color:#fff">S</div>
+          <h2 id="extAppTitle" style="font-size:24px">Spotify</h2>
+          <p style="font-size:13.5px;color:var(--hud-muted);max-width:300px">แตะปุ่มด้านล่างเพื่อสลับไปเปิดแอปนี้บนมือถือ</p>
+          <a class="btn btn-primary" id="extAppLaunch" href="#" target="_blank" rel="noopener">เปิดแอป</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Adaptive Ergonomic Dock (Bottom in Portrait / Left in Landscape) -->
+    <aside class="hud-dock" aria-label="แถบควบคุมโหมดขับขี่">
+      <div class="hud-dock-status">
+        <div class="hud-clock" id="hudClock">--:--</div>
+        <div class="hud-batt" id="hudBatt">87%</div>
+      </div>
+      <div class="hud-dock-apps" id="hudDockApps"></div>
+      <div class="hud-dock-end">
+        <button class="hud-dock-btn hud-dock-home active" id="hudHomeBtn" type="button" aria-label="หน้าโฮม"></button>
+        <button class="hud-dock-btn hud-dock-exit" id="hudExitBtn" type="button" title="ออกจากโหมดขับขี่" aria-label="ออกจากโหมดขับขี่">✕</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Terms of Use & Privacy Policy Modal -->
+  <div class="modal-backdrop" id="legalModal" role="dialog" aria-modal="true" aria-labelledby="legalTitle" hidden>
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h2 id="legalTitle">ข้อตกลงการใช้งาน & ความเป็นส่วนตัว</h2>
+        <p>RideDash — Personal Riding Assistant</p>
+      </div>
+      <div class="modal-body">
+        <div class="legal-block">
+          <h3><span class="section-dot warn"></span>ข้อตกลงการใช้งานและความปลอดภัย (Terms)</h3>
+          <ul>
+            <li>แอปนี้จัดทำขึ้นเพื่อช่วยแสดงข้อมูลการเดินทาง แผนที่ และนำทางเบื้องต้นสำหรับการใช้งานส่วนบุคคล</li>
+            <li>โปรดตั้งค่าเส้นทางก่อนออกเดินทางทุกครั้ง ปฏิบัติตามกฎจราจร และไม่ละสายตาจากถนนระหว่างขับขี่</li>
+            <li>ความเร็ว แผนที่ และเส้นทางอาจคลาดเคลื่อนตามสัญญาณ GPS และข้อมูลแผนที่สาธารณะ ผู้พัฒนาไม่รับผิดชอบต่อความเสียหายหรืออุบัติเหตุที่อาจเกิดขึ้นจากการใช้งาน</li>
+          </ul>
+        </div>
+        <div class="legal-block">
+          <h3><span class="section-dot ok"></span>นโยบายความเป็นส่วนตัว (Privacy)</h3>
+          <ul>
+            <li><b>เก็บข้อมูลในเครื่อง 100%:</b> ประวัติทริป ค่าน้ำมัน เบอร์โทรด่วน และการตั้งค่าทั้งหมดถูกจัดเก็บเฉพาะในอุปกรณ์ของคุณ (<code>localStorage</code>) ไม่มีการส่งข้อมูลส่วนตัวกลับมายังผู้พัฒนา</li>
+            <li><b>สิทธิ์ตำแหน่ง (GPS):</b> ใช้สำหรับแสดงพิกัด ความเร็ว คำนวณเส้นทาง และดึงสภาพอากาศแบบเรียลไทม์เท่านั้น</li>
+            <li><b>บริการภายนอก:</b> แผนที่และเส้นทางใช้บริการสาธารณะจาก OpenStreetMap, Nominatim, OSRM และสภาพอากาศจาก Open-Meteo</li>
+          </ul>
+        </div>
+        <p class="legal-credit">จัดทำโดย ratchapoom และ Mynas4ter2</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-full" id="legalAcceptBtn" type="button">ยอมรับและเริ่มใช้งาน</button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script type="module" src="./js/app.js"></script>

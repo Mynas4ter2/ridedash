@@ -1,4 +1,5 @@
-export const STORAGE_KEY = 'ridedash.v2';
+export const STORAGE_KEY = 'ridedash.v3';
+export const LEGACY_V2_KEY = 'ridedash.v2';
 export const LEGACY_FUEL_KEY = 'ridedash.fuel.v1';
 
 export const APP_ICONS = {
@@ -11,37 +12,29 @@ export const APP_ICONS = {
 };
 
 export const APPS = {
-  map:     { id: 'map',     name: 'แผนที่',        icon: APP_ICONS.map,     grad: ['#22C55E', '#15803D'], internal: true },
-  music:   { id: 'music',   name: 'เพลง',          icon: APP_ICONS.music,   grad: ['#FF375F', '#C4122F'], internal: true },
-  trip:    { id: 'trip',    name: 'ทริป',          icon: APP_ICONS.trip,    grad: ['#F59E0B', '#D97706'], internal: true },
-  phone:   { id: 'phone',   name: 'โทรด่วน',       icon: APP_ICONS.phone,   grad: ['#30D158', '#15803D'], internal: true },
-  weather: { id: 'weather', name: 'อากาศ',         icon: APP_ICONS.weather, grad: ['#38BDF8', '#0284C7'], internal: true },
-  spotify: { id: 'spotify', name: 'Spotify',       letter: 'S',             grad: ['#1ED760', '#0E8F3D'], url: 'https://open.spotify.com' },
-  ytm:     { id: 'ytm',     name: 'YouTube Music', letter: 'Y',             grad: ['#FF3B30', '#B80D00'], url: 'https://music.youtube.com' },
-  gmaps:   { id: 'gmaps',   name: 'Google Maps',   letter: 'G',             grad: ['#4285F4', '#1D4ED8'], url: 'https://www.google.com/maps' },
-  line:    { id: 'line',    name: 'LINE',          letter: 'L',             grad: ['#06C755', '#049940'], url: 'https://line.me' }
+  map:     { id: 'map',     name: 'แผนที่',        icon: APP_ICONS.map,     grad: ['#0284C7', '#0EA5E9'], internal: true },
+  music:   { id: 'music',   name: 'เพลง',          icon: APP_ICONS.music,   grad: ['#6366F1', '#8B5CF6'], internal: true },
+  trip:    { id: 'trip',    name: 'ทริป',          icon: APP_ICONS.trip,    grad: ['#EA580C', '#F59E0B'], internal: true },
+  phone:   { id: 'phone',   name: 'โทรด่วน',       icon: APP_ICONS.phone,   grad: ['#16A34A', '#22C55E'], internal: true },
+  weather: { id: 'weather', name: 'อากาศ',         icon: APP_ICONS.weather, grad: ['#0284C7', '#38BDF8'], internal: true },
+  spotify: { id: 'spotify', name: 'Spotify',       letter: 'S',             grad: ['#16A34A', '#15803D'], url: 'https://open.spotify.com' },
+  ytm:     { id: 'ytm',     name: 'YouTube Music', letter: 'Y',             grad: ['#DC2626', '#B91C1C'], url: 'https://music.youtube.com' },
+  gmaps:   { id: 'gmaps',   name: 'Google Maps',   letter: 'G',             grad: ['#0284C7', '#1D4ED8'], url: 'https://www.google.com/maps' },
+  line:    { id: 'line',    name: 'LINE',          letter: 'L',             grad: ['#16A34A', '#15803D'], url: 'https://line.me' }
 };
 
 export const SAFE_ALLOW = ['map', 'music', 'phone'];
 
-export const RATIOS = [
-  { id: 'fill',  label: 'เต็มจอ',  ratio: null },
-  { id: '5:3',   label: '5:3 (Zontes)', ratio: 5 / 3 },
-  { id: '16:9',  label: '16:9',   ratio: 16 / 9 },
-  { id: '16:10', label: '16:10',  ratio: 1.6 },
-  { id: '4:3',   label: '4:3',    ratio: 4 / 3 }
-];
-
 export const MAP_STYLES = [
-  { id: 'dark', label: 'โหมดมืด (แนะนำ)' },
-  { id: 'light', label: 'โหมดสว่าง (OSM)' },
-  { id: 'satellite', label: 'ภาพถ่ายดาวเทียม' }
+  { id: 'light', label: 'กลางวัน (สว่าง)' },
+  { id: 'dark', label: 'กลางคืน (มืด)' },
+  { id: 'satellite', label: 'ดาวเทียม' }
 ];
 
 export const DEFAULT_CONTACTS = [
-  { name: 'ฉุกเฉินการแพทย์', tel: '1669' },
+  { name: 'การแพทย์ฉุกเฉิน', tel: '1669' },
   { name: 'ตำรวจทางหลวง', tel: '1193' },
-  { name: 'แจ้งเหตุด่วน', tel: '191' }
+  { name: 'เหตุด่วนเหตุร้าย', tel: '191' }
 ];
 
 export const DEFAULT_RADIOS = [
@@ -51,37 +44,50 @@ export const DEFAULT_RADIOS = [
 ];
 
 export const state = {
-  theme: 'auto',          // 'auto' | 'light' | 'dark'
-  screen: 'home',         // 'home' | 'map' | 'music' | 'trip' | 'phone' | 'weather' | external app id
-  focusIdx: 0,
+  theme: 'light',         // 'light' (Warm Cream + Ocean Blue default) | 'dark'
+  hudTheme: 'day',        // 'day' | 'night'
+  activeTab: 0,           // 0: Home, 1: Map, 2: Trip/Fuel, 3: Settings
+  tripSubTab: 'trip',     // 'trip' | 'fuel'
+  screen: 'home',         // HUD view: 'home' | 'map' | 'music' | 'trip' | 'phone' | 'weather' | ext
   rideMode: false,
+  termsAccepted: false,
+  autoTripOnNav: true,
+
   dock: ['map', 'music', 'trip', 'phone'],
-  ratioId: '5:3',
-  mapStyle: 'dark',
+  favorites: { home: null, work: null },
+  mapStyle: 'light',
   safeOn: true,
   safeLimit: 60,
+  voiceEnabled: true,
 
   // GPS & Telemetry
   gpsMode: 'sim',         // 'gps' | 'sim'
-  gpsStatus: 'พร้อมจำลอง',
-  lat: 13.736717,         // Bangkok Sukhumvit default
+  gpsStatus: 'โหมดจำลอง (ทดสอบ)',
+  lat: 13.736717,         // Bangkok Asok default
   lng: 100.5612,
   accuracy: null,
-  speed: 38,
-  simSpeed: 38,
+  speed: 0,
+  simSpeed: 45,
   heading: 45,
+  routeSimActive: false,
 
-  // Navigation
+  // Live Navigation State
   nav: {
-    active: false,
+    phase: 'idle',        // 'idle' | 'preview' | 'guiding' | 'arrived'
     destName: '',
     destLat: null,
     destLng: null,
-    nextDist: 'พร้อมนำทาง',
-    nextText: 'แตะค้นหาเพื่อเลือกจุดหมาย',
+    coords: [],
+    steps: [],
+    stepIdx: 0,
+    totalDistKm: 0,
+    totalDurMin: 0,
+    remDistM: 0,
+    remDurSec: 0,
     etaText: '',
-    distKm: 0,
-    durationMin: 0
+    nextDistText: 'พร้อมนำทาง',
+    nextText: 'ค้นหาจุดหมายในแท็บแผนที่หรือหน้าหลัก',
+    nextIcon: 'straight'
   },
 
   // Active Trip
@@ -113,7 +119,7 @@ export const state = {
     updatedAt: 0
   },
 
-  // System / Battery
+  // Battery
   battery: { level: 0.87, charging: false, real: false }
 };
 
@@ -132,27 +138,37 @@ export function notify(topic = 'all') {
 
 export function loadState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_V2_KEY);
     if (raw) {
       const saved = JSON.parse(raw);
-      if (saved.theme) state.theme = saved.theme;
+      if (saved.theme === 'light' || saved.theme === 'dark') state.theme = saved.theme;
+      if (saved.hudTheme === 'day' || saved.hudTheme === 'night') state.hudTheme = saved.hudTheme;
+      if (typeof saved.termsAccepted === 'boolean') state.termsAccepted = saved.termsAccepted;
+      if (typeof saved.autoTripOnNav === 'boolean') state.autoTripOnNav = saved.autoTripOnNav;
+      if (saved.favorites && typeof saved.favorites === 'object') {
+        state.favorites = {
+          home: saved.favorites.home || null,
+          work: saved.favorites.work || null
+        };
+      }
       if (Array.isArray(saved.dock) && saved.dock.length) {
         state.dock = saved.dock.filter((id) => APPS[id]).slice(0, 4);
       }
-      if (saved.ratioId) state.ratioId = saved.ratioId;
-      if (saved.mapStyle) state.mapStyle = saved.mapStyle;
+      if (saved.mapStyle && ['light', 'dark', 'satellite'].includes(saved.mapStyle)) {
+        state.mapStyle = saved.mapStyle;
+      }
       if (typeof saved.safeOn === 'boolean') state.safeOn = saved.safeOn;
       if (typeof saved.safeLimit === 'number') state.safeLimit = saved.safeLimit;
+      if (typeof saved.voiceEnabled === 'boolean') state.voiceEnabled = saved.voiceEnabled;
       if (Array.isArray(saved.trips)) state.trips = saved.trips.slice(0, 50);
       if (Array.isArray(saved.fuels)) state.fuels = saved.fuels.slice(0, 100);
       if (saved.lastFuelPrice) state.lastFuelPrice = saved.lastFuelPrice;
       if (Array.isArray(saved.contacts) && saved.contacts.length) state.contacts = saved.contacts.slice(0, 12);
       if (Array.isArray(saved.radios) && saved.radios.length) state.radios = saved.radios.slice(0, 12);
     } else {
-      // Import legacy fuel records if user used original file
-      const legacy = localStorage.getItem(LEGACY_FUEL_KEY);
-      if (legacy) {
-        const d = JSON.parse(legacy);
+      const legacyFuel = localStorage.getItem(LEGACY_FUEL_KEY);
+      if (legacyFuel) {
+        const d = JSON.parse(legacyFuel);
         if (d && Array.isArray(d.fuels)) state.fuels = d.fuels.slice(0, 100);
         if (d && d.price) state.lastFuelPrice = d.price;
       }
@@ -165,13 +181,17 @@ export function loadState() {
 export function persistState() {
   try {
     const payload = {
-      v: 2,
+      v: 3,
       theme: state.theme,
+      hudTheme: state.hudTheme,
+      termsAccepted: state.termsAccepted,
+      autoTripOnNav: state.autoTripOnNav,
+      favorites: state.favorites,
       dock: state.dock,
-      ratioId: state.ratioId,
       mapStyle: state.mapStyle,
       safeOn: state.safeOn,
       safeLimit: state.safeLimit,
+      voiceEnabled: state.voiceEnabled,
       trips: state.trips,
       fuels: state.fuels,
       lastFuelPrice: state.lastFuelPrice,

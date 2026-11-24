@@ -2,24 +2,18 @@ import {
   state,
   APPS,
   APP_ICONS,
-  RATIOS,
   isSafeActive,
   visibleDock,
   headingInfo,
   fmtDuration,
   svgIcon,
   esc,
+  persistState,
   notify
 } from './store.js';
-import { invalidateMap, updateMapPosition } from './map.js';
-import {
-  getMediaState,
-  togglePlay,
-  nextTrack,
-  prevTrack,
-  seekPercent,
-  renderRadioButtons
-} from './media.js';
+import { invalidateMap, updateMapPosition, recenterMap, openInGoogleMaps, applyMapStyle } from './map.js';
+import { turnIconSvg, toggleVoice, stopNavigation, fmtMeters } from './nav.js';
+import { getMediaState, togglePlay, nextTrack, prevTrack, seekPercent, renderRadioButtons } from './media.js';
 import { startOrFinishTrip, togglePauseTrip } from './trip.js';
 import { refreshWeather } from './weather.js';
 
@@ -28,91 +22,50 @@ const $ = (id) => document.getElementById(id);
 const PLAY_SVG = '<svg viewBox="0 0 24 24"><polygon points="7,5 19,12 7,19"/></svg>';
 const PAUSE_SVG = '<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
 
-export function openScreen(id) {
+export function openHudScreen(id) {
   state.screen = id;
   if (id === 'weather') refreshWeather(true);
-  renderDashLayout();
+  renderHudLayout();
   if (id === 'home' || id === 'map') invalidateMap();
   notify('screen');
 }
 
-export function moveFocus(delta) {
-  const dock = visibleDock();
-  if (!dock.length) return;
-  if (state.screen !== 'home') {
-    state.screen = 'home';
-  }
-  state.focusIdx = ((state.focusIdx + delta) % dock.length + dock.length) % dock.length;
-  renderDock();
-  notify('screen');
-}
-
-export function triggerFocused() {
-  const dock = visibleDock();
-  if (state.screen === 'home' && dock[state.focusIdx]) {
-    openScreen(dock[state.focusIdx]);
+export function applyHudTheme() {
+  const hud = $('rideHud');
+  if (hud) hud.dataset.hud = state.hudTheme;
+  const btn = $('hudThemeToggle');
+  if (btn) btn.textContent = state.hudTheme === 'night' ? '☀️' : '🌙';
+  if (state.rideMode && state.mapStyle !== 'satellite') {
+    applyMapStyle(state.hudTheme === 'night' ? 'dark' : 'light');
   }
 }
 
-export function goHome() {
-  openScreen('home');
-}
-
-export function applyViewportRatio() {
-  const vp = $('dashViewport');
-  const surf = $('dashSurface');
-  const info = $('previewMetaText');
-  if (!vp || !surf) return;
-
-  const spec = RATIOS.find((r) => r.id === state.ratioId) || RATIOS[0];
-  if (spec.ratio == null) {
-    vp.dataset.fit = 'fill';
-    surf.style.aspectRatio = '';
-    surf.style.width = '100%';
-    surf.style.height = '100%';
-    if (info) info.textContent = `โหมดเต็มหน้าจอ · ${state.gpsStatus}`;
-  } else {
-    vp.dataset.fit = 'ratio';
-    surf.style.aspectRatio = String(spec.ratio);
-    surf.style.width = '';
-    surf.style.height = '';
-    if (info) info.textContent = `สัดส่วน ${spec.label} · ${state.gpsStatus}`;
-  }
-  invalidateMap();
-}
-
-export function renderDock() {
-  const appsBox = $('dockApps');
-  const homeBtn = $('dockHomeBtn');
-  if (!appsBox) return;
+export function renderHudDock() {
+  const box = $('hudDockApps');
+  const homeBtn = $('hudHomeBtn');
+  if (!box) return;
 
   const dock = visibleDock();
-  if (state.focusIdx >= dock.length) state.focusIdx = Math.max(0, dock.length - 1);
-  if (state.screen !== 'home' && !dock.includes(state.screen) && !APPS[state.screen]?.internal) {
-    state.screen = 'home';
-  }
-
-  appsBox.innerHTML = dock.map((id, i) => {
+  box.innerHTML = dock.map((id) => {
     const a = APPS[id];
-    const isActive = state.screen === id;
-    const isFocused = state.screen === 'home' && state.focusIdx === i;
-    const content = a.icon ? svgIcon(a.icon, 26) : esc(a.letter || a.name[0]);
-    return `<button class="dock-btn${isActive ? ' active' : ''}${isFocused ? ' focused' : ''}" data-app="${id}" title="${esc(a.name)}" aria-label="${esc(a.name)}" style="background:linear-gradient(150deg,${a.grad[0]},${a.grad[1]})">${content}</button>`;
+    const active = state.screen === id;
+    const inner = a.icon ? svgIcon(a.icon, 21) : esc(a.letter || a.name[0]);
+    return `<button class="hud-dock-btn${active ? ' active' : ''}" data-happ="${id}" title="${esc(a.name)}" aria-label="${esc(a.name)}" style="background:linear-gradient(145deg,${a.grad[0]},${a.grad[1]})">${inner}</button>`;
   }).join('');
 
-  appsBox.querySelectorAll('[data-app]').forEach((btn) => {
-    btn.onclick = () => openScreen(btn.dataset.app);
+  box.querySelectorAll('[data-happ]').forEach((btn) => {
+    btn.onclick = () => openHudScreen(btn.dataset.happ);
   });
 
   if (homeBtn) {
     homeBtn.classList.toggle('active', state.screen === 'home');
-    homeBtn.innerHTML = svgIcon(APP_ICONS.home, 24);
+    homeBtn.innerHTML = svgIcon(APP_ICONS.home, 21);
   }
 }
 
-export function renderDashLayout() {
-  const main = $('dashMain');
-  if (!main) return;
+export function renderHudLayout() {
+  const hud = $('rideHud');
+  if (!hud) return;
 
   const safe = isSafeActive();
   let view = state.screen;
@@ -122,51 +75,51 @@ export function renderDashLayout() {
   }
 
   const isInternal = ['home', 'map', 'music', 'trip', 'phone', 'weather'].includes(view);
-  main.dataset.view = isInternal ? view : 'ext';
-  main.dataset.safe = safe ? 'true' : 'false';
+  hud.dataset.view = isInternal ? view : 'ext';
+  hud.dataset.safe = safe ? 'true' : 'false';
 
   if (!isInternal) {
-    renderExternalScreen(view);
+    const app = APPS[view];
+    if (app) {
+      if ($('extAppIcon')) {
+        $('extAppIcon').textContent = app.letter || app.name[0];
+        $('extAppIcon').style.background = `linear-gradient(145deg,${app.grad[0]},${app.grad[1]})`;
+      }
+      if ($('extAppTitle')) $('extAppTitle').textContent = app.name;
+      if ($('extAppLaunch')) {
+        $('extAppLaunch').href = app.url || '#';
+        $('extAppLaunch').textContent = `เปิด ${app.name}`;
+      }
+    }
   }
 
-  renderDock();
-  renderPhoneGrid();
-  renderTelemetry();
+  renderHudDock();
+  renderHudPhoneGrid();
+  renderHudTelemetry();
+  renderHudNav();
   renderMediaUi();
   renderWeatherUi();
-  renderNavUi();
   if (view === 'home' || view === 'map') invalidateMap();
 }
 
-function renderExternalScreen(appId) {
-  const app = APPS[appId];
-  if (!app) return;
-  const icon = $('extAppIcon');
-  const title = $('extAppTitle');
-  const link = $('extAppLaunch');
-  if (icon) {
-    icon.textContent = app.letter || app.name[0];
-    icon.style.background = `linear-gradient(150deg,${app.grad[0]},${app.grad[1]})`;
-  }
-  if (title) title.textContent = app.name;
-  if (link) {
-    link.href = app.url || '#';
-    link.textContent = `เปิด ${app.name}`;
-  }
-}
-
-export function renderTelemetry() {
+export function renderHudTelemetry() {
   const spd = state.speed;
   const h = headingInfo(state.heading);
   const T = state.trip;
   const avg = T.seconds > 0 ? Math.round(T.distanceKm / (T.seconds / 3600)) : 0;
 
-  if ($('homeSpeed')) $('homeSpeed').textContent = spd;
-  if ($('mapSpeed')) $('mapSpeed').textContent = spd;
-  if ($('mapHeading')) $('mapHeading').textContent = `km/h · ${h.arrow} ${h.name}`;
-  if ($('homeHeading')) $('homeHeading').textContent = `${h.arrow} ${h.short} · ${h.deg}°`;
-  if ($('homeTripMini')) $('homeTripMini').textContent = `${T.distanceKm.toFixed(1)} กม. · ${fmtDuration(T.seconds)}`;
+  // Home Hero live numbers
+  if ($('heroSpeed')) $('heroSpeed').textContent = spd;
+  if ($('heroTripVal')) $('heroTripVal').textContent = `${T.distanceKm.toFixed(1)} กม.`;
+  if ($('heroGpsVal')) $('heroGpsVal').textContent = state.gpsMode === 'gps' ? (state.accuracy != null ? `±${state.accuracy} ม.` : 'จับสัญญาณ...') : 'โหมดจำลอง';
+  if ($('heroVoiceVal')) $('heroVoiceVal').textContent = state.voiceEnabled ? 'เสียงไทยเปิด' : 'ปิดเสียง';
 
+  // Ride HUD live numbers
+  if ($('hudSpeed')) $('hudSpeed').textContent = spd;
+  if ($('hudHeading')) $('hudHeading').textContent = `${h.arrow} ${h.short} ${h.deg}°`;
+  if ($('hudTripMini')) $('hudTripMini').textContent = `${T.distanceKm.toFixed(1)} กม. · ${fmtDuration(T.seconds)}`;
+
+  // HUD Full Trip Screen
   if ($('tripHeroSpeed')) $('tripHeroSpeed').textContent = spd;
   if ($('tripHeroHeading')) $('tripHeroHeading').textContent = `${h.arrow} ทิศ${h.name} (${h.deg}°)`;
   if ($('dashTripDist')) $('dashTripDist').textContent = T.distanceKm.toFixed(2);
@@ -182,24 +135,45 @@ export function renderTelemetry() {
     dashPauseBtn.textContent = T.paused ? 'บันทึกต่อ' : 'พัก';
   }
 
-  // Re-evaluate safe mode whenever speed changes
-  const main = $('dashMain');
-  if (main) {
-    const wasSafe = main.dataset.safe === 'true';
+  // Auto-update Safe Mode state on HUD when crossing speed threshold
+  const hud = $('rideHud');
+  if (hud) {
+    const wasSafe = hud.dataset.safe === 'true';
     const nowSafe = isSafeActive();
-    if (wasSafe !== nowSafe) {
-      renderDashLayout();
-    }
+    if (wasSafe !== nowSafe) renderHudLayout();
   }
 
   updateMapPosition();
 }
 
-export function renderNavUi() {
+export function renderHudNav() {
   const n = state.nav;
-  if ($('turnDist')) $('turnDist').textContent = n.nextDist;
-  if ($('turnDesc')) $('turnDesc').textContent = n.active && n.etaText ? `${n.nextText} · ${n.etaText}` : n.nextText;
-  if ($('mapClearRouteBtn')) $('mapClearRouteBtn').hidden = !n.active;
+  if ($('hudTurnIcon')) {
+    $('hudTurnIcon').innerHTML = `<svg viewBox="0 0 24 24">${turnIconSvg(n.nextIcon)}</svg>`;
+  }
+  if ($('hudTurnDist')) $('hudTurnDist').textContent = n.nextDistText;
+  if ($('hudTurnText')) $('hudTurnText').textContent = n.nextText;
+
+  const voiceBtn = $('hudVoiceToggle');
+  if (voiceBtn) {
+    voiceBtn.textContent = state.voiceEnabled ? '🔊' : '🔇';
+    voiceBtn.classList.toggle('muted', !state.voiceEnabled);
+  }
+
+  const etaPill = $('hudEtaPill');
+  if (etaPill) {
+    if (n.phase === 'guiding' || n.phase === 'arrived') {
+      etaPill.hidden = false;
+      etaPill.textContent = n.phase === 'arrived'
+        ? '🏁 ถึงจุดหมายแล้ว'
+        : `ถึง ${n.etaText} · ${fmtMeters(n.remDistM)}`;
+    } else {
+      etaPill.hidden = true;
+    }
+  }
+
+  const stopBtn = $('hudStopNavBtn');
+  if (stopBtn) stopBtn.hidden = n.phase === 'idle';
 }
 
 export function renderMediaUi() {
@@ -207,10 +181,17 @@ export function renderMediaUi() {
   const playHtml = m.playing ? PAUSE_SVG : PLAY_SVG;
   const sub = m.loading ? 'กำลังเชื่อมต่อเสียง...' : (m.errorMsg || m.track.artist);
 
-  if ($('miniMediaTitle')) $('miniMediaTitle').textContent = m.track.title;
-  if ($('miniMediaArtist')) $('miniMediaArtist').textContent = sub;
-  if ($('miniPlayBtn')) $('miniPlayBtn').innerHTML = playHtml;
+  // Home Mini Card
+  if ($('homeMediaTitle')) $('homeMediaTitle').textContent = m.track.title;
+  if ($('homeMediaSub')) $('homeMediaSub').textContent = sub;
+  if ($('homePlayBtn')) $('homePlayBtn').innerHTML = playHtml;
 
+  // HUD Compact Strip
+  if ($('hudMediaTitle')) $('hudMediaTitle').textContent = m.track.title;
+  if ($('hudMediaSub')) $('hudMediaSub').textContent = sub;
+  if ($('hudPlayBtn')) $('hudPlayBtn').innerHTML = playHtml;
+
+  // HUD Full Music Screen
   if ($('fullMediaTitle')) $('fullMediaTitle').textContent = m.track.title;
   if ($('fullMediaArtist')) $('fullMediaArtist').textContent = sub;
   if ($('fullPlayBtn')) $('fullPlayBtn').innerHTML = playHtml;
@@ -227,54 +208,67 @@ export function renderMediaProgress() {
 export function renderWeatherUi() {
   const w = state.weather;
   const t = w.temp != null ? `${w.icon} ${w.temp}°C` : `${w.icon} --°`;
-  if ($('homeWeatherTemp')) $('homeWeatherTemp').textContent = t;
-  if ($('homeWeatherDesc')) $('homeWeatherDesc').textContent = w.desc;
+  if ($('heroWeatherTemp')) $('heroWeatherTemp').textContent = t;
+  if ($('heroWeatherDesc')) $('heroWeatherDesc').textContent = w.desc;
 
   if ($('fullWeatherTemp')) $('fullWeatherTemp').textContent = w.temp != null ? `${w.icon} ${w.temp}°C` : `${w.icon} --°C`;
   if ($('fullWeatherDesc')) $('fullWeatherDesc').textContent = w.desc;
   if ($('fullWeatherMeta')) {
     $('fullWeatherMeta').textContent = w.humidity != null
       ? `ความชื้น ${w.humidity}% · ลม ${w.wind} กม./ชม.`
-      : 'แตะรีเฟรชเพื่ออัปเดตสภาพอากาศตามพิกัดปัจจุบัน';
+      : 'แตะอัปเดตเพื่อดึงสภาพอากาศตามพิกัดปัจจุบัน';
   }
 }
 
-export function renderPhoneGrid() {
-  const grid = $('dialGrid');
+export function renderHudPhoneGrid() {
+  const grid = $('hudDialGrid');
   if (!grid) return;
   grid.innerHTML = state.contacts.map((c) => `
-    <a class="dial-tile" href="tel:${esc(c.tel)}">
-      <div class="dial-avatar">${esc((c.name || '?')[0])}</div>
+    <a class="hud-dial-tile" href="tel:${esc(c.tel)}">
+      <div class="hud-dial-avatar">${esc((c.name || '?')[0])}</div>
       <b>${esc(c.name)}</b>
-      <small>${esc(c.tel)}</small>
+      <small style="color:var(--hud-muted)">${esc(c.tel)}</small>
     </a>
   `).join('');
 }
 
-export function renderClockAndBattery() {
+export function renderHudClockAndBattery() {
   const now = new Date();
   const p2 = (n) => (n < 10 ? '0' + n : String(n));
-  const clockEl = $('dockClock');
-  if (clockEl) clockEl.textContent = `${p2(now.getHours())}:${p2(now.getMinutes())}`;
-
+  if ($('hudClock')) $('hudClock').textContent = `${p2(now.getHours())}:${p2(now.getMinutes())}`;
   const pct = Math.round(state.battery.level * 100);
-  const battEl = $('dockBatt');
-  if (battEl) battEl.textContent = `${pct}%${state.battery.charging ? '⚡' : ''}`;
+  if ($('hudBatt')) $('hudBatt').textContent = `${pct}%${state.battery.charging ? '⚡' : ''}`;
 }
 
 export function initDash() {
-  if ($('dockHomeBtn')) $('dockHomeBtn').onclick = goHome;
-  if ($('homeSpeedCard')) $('homeSpeedCard').onclick = () => openScreen('trip');
-  if ($('homeMediaCard')) {
-    $('homeMediaCard').onclick = (e) => {
+  if ($('hudHomeBtn')) $('hudHomeBtn').onclick = () => openHudScreen('home');
+  if ($('hudSpeedTile')) $('hudSpeedTile').onclick = () => openHudScreen('trip');
+  if ($('hudMediaTile')) {
+    $('hudMediaTile').onclick = (e) => {
       if (e.target.closest('button')) return;
-      openScreen('music');
+      openHudScreen('music');
     };
   }
 
-  if ($('miniPrevBtn')) $('miniPrevBtn').onclick = prevTrack;
-  if ($('miniPlayBtn')) $('miniPlayBtn').onclick = togglePlay;
-  if ($('miniNextBtn')) $('miniNextBtn').onclick = nextTrack;
+  if ($('hudVoiceToggle')) $('hudVoiceToggle').onclick = toggleVoice;
+  if ($('hudThemeToggle')) {
+    $('hudThemeToggle').onclick = () => {
+      state.hudTheme = state.hudTheme === 'night' ? 'day' : 'night';
+      persistState();
+      applyHudTheme();
+    };
+  }
+
+  if ($('hudFollowBtn')) $('hudFollowBtn').onclick = () => recenterMap(16);
+  if ($('hudGmapsBtn')) $('hudGmapsBtn').onclick = openInGoogleMaps;
+  if ($('hudStopNavBtn')) $('hudStopNavBtn').onclick = stopNavigation;
+
+  if ($('homePlayBtn')) $('homePlayBtn').onclick = togglePlay;
+  if ($('homeNextBtn')) $('homeNextBtn').onclick = nextTrack;
+
+  if ($('hudPrevBtn')) $('hudPrevBtn').onclick = prevTrack;
+  if ($('hudPlayBtn')) $('hudPlayBtn').onclick = togglePlay;
+  if ($('hudNextBtn')) $('hudNextBtn').onclick = nextTrack;
 
   if ($('fullPrevBtn')) $('fullPrevBtn').onclick = prevTrack;
   if ($('fullPlayBtn')) $('fullPlayBtn').onclick = togglePlay;
@@ -291,8 +285,8 @@ export function initDash() {
   if ($('dashTripPause')) $('dashTripPause').onclick = togglePauseTrip;
   if ($('weatherRefreshBtn')) $('weatherRefreshBtn').onclick = () => refreshWeather(true);
 
-  renderClockAndBattery();
-  setInterval(renderClockAndBattery, 1000);
-  renderDashLayout();
-  applyViewportRatio();
+  applyHudTheme();
+  renderHudClockAndBattery();
+  setInterval(renderHudClockAndBattery, 1000);
+  renderHudLayout();
 }

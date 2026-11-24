@@ -190,7 +190,7 @@ export function renderRadioButtons(container) {
   if (!container) return;
   const { playlist: list, currentIdx: cur } = getMediaState();
   container.innerHTML = list.map((t, idx) =>
-    `<button class="dash-pill-btn${idx === cur ? ' active' : ''}" data-track="${idx}">${t.isLive ? '📻 ' : '🎵 '}${esc(t.title)}</button>`
+    `<button class="chip" type="button" aria-pressed="${idx === cur}" data-track="${idx}">${t.isLive ? '📻 ' : '🎵 '}${esc(t.title)}</button>`
   ).join('');
   container.querySelectorAll('[data-track]').forEach((btn) => {
     btn.onclick = () => selectTrack(Number(btn.dataset.track), true);
