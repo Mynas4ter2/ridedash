@@ -44,8 +44,8 @@ export const DEFAULT_RADIOS = [
 ];
 
 export const state = {
-  theme: 'light',         // 'light' (Warm Cream + Ocean Blue default) | 'dark'
-  hudTheme: 'day',        // 'day' | 'night'
+  theme: 'dark',          // 'dark' (default) | 'light'
+  hudTheme: 'night',      // 'night' (default) | 'day'
   activeTab: 0,           // 0: Home, 1: Map, 2: Trip/Fuel, 3: Settings
   tripSubTab: 'trip',     // 'trip' | 'fuel'
   screen: 'home',         // HUD view: 'home' | 'map' | 'music' | 'trip' | 'phone' | 'weather' | ext
@@ -55,7 +55,7 @@ export const state = {
 
   dock: ['map', 'music', 'trip', 'phone'],
   favorites: { home: null, work: null },
-  mapStyle: 'light',
+  mapStyle: 'dark',
   safeOn: true,
   safeLimit: 60,
   voiceEnabled: true,
@@ -117,10 +117,7 @@ export const state = {
     humidity: null,
     wind: null,
     updatedAt: 0
-  },
-
-  // Battery
-  battery: { level: 0.87, charging: false, real: false }
+  }
 };
 
 const listeners = new Set();

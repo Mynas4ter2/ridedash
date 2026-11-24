@@ -232,12 +232,10 @@ export function renderHudPhoneGrid() {
   `).join('');
 }
 
-export function renderHudClockAndBattery() {
+export function renderHudClock() {
   const now = new Date();
   const p2 = (n) => (n < 10 ? '0' + n : String(n));
   if ($('hudClock')) $('hudClock').textContent = `${p2(now.getHours())}:${p2(now.getMinutes())}`;
-  const pct = Math.round(state.battery.level * 100);
-  if ($('hudBatt')) $('hudBatt').textContent = `${pct}%${state.battery.charging ? '⚡' : ''}`;
 }
 
 export function initDash() {
@@ -286,7 +284,7 @@ export function initDash() {
   if ($('weatherRefreshBtn')) $('weatherRefreshBtn').onclick = () => refreshWeather(true);
 
   applyHudTheme();
-  renderHudClockAndBattery();
-  setInterval(renderHudClockAndBattery, 1000);
+  renderHudClock();
+  setInterval(renderHudClock, 1000);
   renderHudLayout();
 }
