@@ -50,10 +50,11 @@ export const state = {
   tripSubTab: 'trip',     // 'trip' | 'fuel'
   screen: 'home',         // HUD view: 'home' | 'map' | 'music' | 'trip' | 'phone' | 'weather' | ext
   rideMode: false,
-  onboardingDismissed: false,
   termsAccepted: false,
+  autoTripOnNav: true,
 
   dock: ['map', 'music', 'trip', 'phone'],
+  favorites: { home: null, work: null },
   mapStyle: 'light',
   safeOn: true,
   safeLimit: 60,
@@ -142,8 +143,14 @@ export function loadState() {
       const saved = JSON.parse(raw);
       if (saved.theme === 'light' || saved.theme === 'dark') state.theme = saved.theme;
       if (saved.hudTheme === 'day' || saved.hudTheme === 'night') state.hudTheme = saved.hudTheme;
-      if (typeof saved.onboardingDismissed === 'boolean') state.onboardingDismissed = saved.onboardingDismissed;
       if (typeof saved.termsAccepted === 'boolean') state.termsAccepted = saved.termsAccepted;
+      if (typeof saved.autoTripOnNav === 'boolean') state.autoTripOnNav = saved.autoTripOnNav;
+      if (saved.favorites && typeof saved.favorites === 'object') {
+        state.favorites = {
+          home: saved.favorites.home || null,
+          work: saved.favorites.work || null
+        };
+      }
       if (Array.isArray(saved.dock) && saved.dock.length) {
         state.dock = saved.dock.filter((id) => APPS[id]).slice(0, 4);
       }
@@ -177,8 +184,9 @@ export function persistState() {
       v: 3,
       theme: state.theme,
       hudTheme: state.hudTheme,
-      onboardingDismissed: state.onboardingDismissed,
       termsAccepted: state.termsAccepted,
+      autoTripOnNav: state.autoTripOnNav,
+      favorites: state.favorites,
       dock: state.dock,
       mapStyle: state.mapStyle,
       safeOn: state.safeOn,

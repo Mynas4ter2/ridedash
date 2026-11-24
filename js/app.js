@@ -49,9 +49,36 @@ import {
 
 const $ = (id) => document.getElementById(id);
 let wakeLock = null;
+let deferredInstallPrompt = null;
 
 function applyTheme() {
   document.documentElement.setAttribute('data-theme', state.theme);
+  const btn = $('headerThemeBtn');
+  if (btn) {
+    btn.textContent = state.theme === 'dark' ? '☀️' : '🌙';
+    btn.title = state.theme === 'dark' ? 'สลับเป็นโหมดสว่าง' : 'สลับเป็นโหมดมืด';
+  }
+}
+
+function renderFavorites() {
+  const f = state.favorites || {};
+  const hb = $('favHomeBtn');
+  const wb = $('favWorkBtn');
+  if (hb) {
+    hb.classList.toggle('unset', !f.home);
+    if ($('favHomeSub')) $('favHomeSub').textContent = f.home ? f.home.name : 'แตะเพื่อตั้งค่า';
+  }
+  if (wb) {
+    wb.classList.toggle('unset', !f.work);
+    if ($('favWorkSub')) $('favWorkSub').textContent = f.work ? f.work.name : 'แตะเพื่อตั้งค่า';
+  }
+}
+
+function ensureAutoTrip() {
+  if (state.autoTripOnNav && !state.trip.on) {
+    state.trip = { on: true, paused: false, seconds: 0, distanceKm: 0, maxSpeed: state.speed };
+    notify('trip');
+  }
 }
 
 function showTab(idx) {
@@ -239,12 +266,14 @@ function renderContactsSettings() {
 function renderSettingsUi() {
   const isReal = state.gpsMode === 'gps';
 
-  // Header GPS Pill
+  // Header GPS Pill (concise so all 3 pills always fit 1 row on 360px phones)
   const hPill = $('gpsHeaderPill');
   if (hPill) {
     hPill.className = 'status-pill ' + (isReal ? 'gps-real' : 'gps-sim');
-    if ($('gpsHeaderText')) $('gpsHeaderText').textContent = isReal ? 'GPS จริง' : 'โหมดจำลอง';
+    if ($('gpsHeaderText')) $('gpsHeaderText').textContent = isReal ? 'GPS จริง' : 'จำลอง';
   }
+
+  if ($('autoTripChk')) $('autoTripChk').checked = !!state.autoTripOnNav;
 
   // Settings GPS controls
   if ($('gpsModeReal')) $('gpsModeReal').setAttribute('aria-pressed', String(isReal));
@@ -368,13 +397,81 @@ function initBattery() {
 }
 
 function bindEvents() {
-  // Onboarding dismiss
-  if ($('welcomeTip')) $('welcomeTip').hidden = state.onboardingDismissed;
-  if ($('welcomeClose')) {
-    $('welcomeClose').onclick = () => {
-      state.onboardingDismissed = true;
-      $('welcomeTip').hidden = true;
+  // Top-right Light/Dark Theme toggle button
+  if ($('headerThemeBtn')) {
+    $('headerThemeBtn').onclick = () => {
+      state.theme = state.theme === 'dark' ? 'light' : 'dark';
+      state.hudTheme = state.theme === 'dark' ? 'night' : 'day';
+      if (state.mapStyle !== 'satellite') {
+        state.mapStyle = state.theme === 'dark' ? 'dark' : 'light';
+        applyMapStyle(state.mapStyle);
+      }
       persistState();
+      applyTheme();
+      applyHudTheme();
+      renderSettingsUi();
+    };
+  }
+
+  // Favorite Places (Home / Work)
+  const triggerFav = async (key, label) => {
+    const saved = state.favorites?.[key];
+    if (saved) {
+      showTab(1);
+      try {
+        await calculateRoute(saved.lat, saved.lng, saved.name, { autoStart: false });
+      } catch (e) {
+        alert('ไม่สามารถคำนวณเส้นทางได้ในขณะนี้');
+      }
+    } else {
+      showTab(1);
+      const inp = $('mapSearchInput');
+      if (inp) {
+        inp.value = '';
+        inp.placeholder = `ค้นหาตำแหน่ง "${label}" แล้วกด ⭐ ตั้งเป็น${label}`;
+        inp.focus();
+      }
+    }
+  };
+  if ($('favHomeBtn')) $('favHomeBtn').onclick = () => triggerFav('home', 'บ้าน');
+  if ($('favWorkBtn')) $('favWorkBtn').onclick = () => triggerFav('work', 'ที่ทำงาน');
+
+  const saveCurrentDestAsFav = (key, label) => {
+    const n = state.nav;
+    if (n.destLat == null || n.destLng == null) return;
+    state.favorites[key] = { name: n.destName || label, lat: n.destLat, lng: n.destLng };
+    persistState();
+    renderFavorites();
+    const btn = $(key === 'home' ? 'saveFavHomeBtn' : 'saveFavWorkBtn');
+    if (btn) {
+      btn.textContent = `✓ บันทึก${label}แล้ว`;
+      setTimeout(() => { btn.textContent = `⭐ ตั้งเป็น${label}`; }, 1800);
+    }
+  };
+  if ($('saveFavHomeBtn')) $('saveFavHomeBtn').onclick = () => saveCurrentDestAsFav('home', 'บ้าน');
+  if ($('saveFavWorkBtn')) $('saveFavWorkBtn').onclick = () => saveCurrentDestAsFav('work', 'ที่ทำงาน');
+
+  // Auto-trip checkbox
+  if ($('autoTripChk')) {
+    $('autoTripChk').onchange = (e) => {
+      state.autoTripOnNav = !!e.target.checked;
+      persistState();
+    };
+  }
+
+  // PWA Install Prompt
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    if ($('pwaInstallBtn')) $('pwaInstallBtn').hidden = false;
+  });
+  if ($('pwaInstallBtn')) {
+    $('pwaInstallBtn').onclick = async () => {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice.catch(() => {});
+      deferredInstallPrompt = null;
+      $('pwaInstallBtn').hidden = true;
     };
   }
 
@@ -406,6 +503,7 @@ function bindEvents() {
 
   if ($('routeStartBtn')) {
     $('routeStartBtn').onclick = () => {
+      ensureAutoTrip();
       startGuidance();
       openHudScreen('home');
       setRideMode(true);
@@ -416,6 +514,7 @@ function bindEvents() {
       if (state.routeSimActive) {
         toggleRouteSim(false);
       } else {
+        ensureAutoTrip();
         startGuidance();
         toggleRouteSim(true);
         openHudScreen('home');
@@ -597,6 +696,7 @@ bindEvents();
 renderDockSettings();
 renderContactsSettings();
 renderHomeQuickDial();
+renderFavorites();
 renderSettingsUi();
 renderRouteSheet();
 showTripSubTab('trip');

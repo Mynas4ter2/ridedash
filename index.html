@@ -32,29 +32,35 @@
       <div class="header-pills">
         <button class="status-pill gps-sim" id="gpsHeaderPill" type="button" title="แตะเพื่อสลับระหว่าง GPS จริง กับโหมดจำลอง">
           <i class="status-dot"></i>
-          <span id="gpsHeaderText">โหมดจำลอง</span>
+          <span id="gpsHeaderText">จำลอง</span>
         </button>
         <div class="status-pill batt-chip" title="แบตเตอรี่">
           <span class="batt good" id="battIcon"><span class="batt-fill" id="battFill" style="width:87%"></span></span>
           <span id="battTxt">87%</span>
         </div>
+        <button class="icon-pill-btn" id="headerThemeBtn" type="button" title="สลับโหมดมืด/สว่าง" aria-label="สลับโหมดมืดหรือสว่าง">🌙</button>
       </div>
     </header>
 
     <main class="app-body">
       <!-- TAB 0: HOME (Clean, Minimalist, Instant Clarity) -->
       <section class="tab-view" data-tab="0">
-        <div class="welcome-tip" id="welcomeTip">
-          <span><b>เริ่มใช้งานง่ายๆ:</b> พิมพ์จุดหมายด้านล่างเพื่อนำทางด้วยเสียง หรือแตะปุ่มสีฟ้า <b>ขับขี่</b> ด้านล่าง</span>
-          <button id="welcomeClose" type="button" aria-label="ปิดคำแนะนำ">✕</button>
-        </div>
-
         <!-- Where to? Search Card -->
         <div class="search-card">
           <div class="search-bar">
             <span style="color:var(--acc);font-size:16px">🔍</span>
             <input id="homeSearchInput" type="search" placeholder="จะไปไหนดี? เช่น ปั๊ม ปตท, สยาม...">
             <button class="search-go" id="homeSearchGo" type="button">ค้นหา</button>
+          </div>
+          <div class="fav-row">
+            <button class="fav-btn unset" id="favHomeBtn" type="button">
+              <span style="font-size:18px">🏠</span>
+              <div class="fav-btn-txt"><b>กลับบ้าน</b><small id="favHomeSub">แตะเพื่อตั้งค่า</small></div>
+            </button>
+            <button class="fav-btn unset" id="favWorkBtn" type="button">
+              <span style="font-size:18px">💼</span>
+              <div class="fav-btn-txt"><b>ที่ทำงาน</b><small id="favWorkSub">แตะเพื่อตั้งค่า</small></div>
+            </button>
           </div>
           <div class="poi-row">
             <button class="poi-chip" type="button" data-poi="ปั๊มน้ำมัน">⛽ ปั๊มน้ำมัน</button>
@@ -155,6 +161,10 @@
               <button class="btn btn-primary btn-full" id="routeStartBtn" type="button">▶ เริ่มนำทางด้วยเสียง</button>
               <button class="btn btn-warn btn-sm" id="routeSimBtn" type="button" style="flex:1">🧪 จำลองขี่</button>
               <button class="btn btn-sm" id="routeGmapsBtn" type="button" style="flex:1">Google Maps ↗</button>
+            </div>
+            <div class="route-fav-row">
+              <button class="btn btn-sm" id="saveFavHomeBtn" type="button" style="flex:1">⭐ ตั้งเป็นบ้าน</button>
+              <button class="btn btn-sm" id="saveFavWorkBtn" type="button" style="flex:1">⭐ ตั้งเป็นที่ทำงาน</button>
             </div>
           </div>
         </div>
@@ -269,6 +279,9 @@
             <button class="btn btn-sm" id="voiceToggleBtn" type="button">🔊 เสียงนำทางไทย: เปิด</button>
             <button class="btn btn-sm btn-primary" id="voiceTestBtn" type="button">ทดลองฟังเสียง</button>
           </div>
+          <label class="chk">
+            <input type="checkbox" id="autoTripChk" checked> เริ่มบันทึกทริปอัตโนมัติเมื่อเริ่มนำทาง
+          </label>
         </div>
 
         <div class="card">
@@ -283,45 +296,58 @@
         </div>
 
         <div class="card">
-          <div class="card-head">
-            <h2 class="section-title"><span class="section-dot"></span>แอปบนแถบขับขี่ (Dock)</h2>
-            <span class="badge" id="dockCount">4/4</span>
-          </div>
-          <ul class="list" id="dockMineList"></ul>
-          <button class="btn btn-primary btn-full" id="addAppBtn" type="button">+ เพิ่มทางลัดแอป</button>
-          <div id="appPicker" hidden>
-            <ul class="list" id="dockAllList"></ul>
-          </div>
-        </div>
-
-        <div class="card">
-          <h2 class="section-title"><span class="section-dot ok"></span>เบอร์โทรด่วน</h2>
-          <ul class="list" id="contactList"></ul>
-          <div class="grid2">
-            <input class="input" id="contactNameIn" type="text" maxlength="24" placeholder="ชื่อ เช่น บ้าน">
-            <input class="input" id="contactTelIn" type="tel" maxlength="20" placeholder="เบอร์โทร">
-          </div>
-          <button class="btn btn-full" id="contactAddBtn" type="button">+ เพิ่มเบอร์โทรด่วน</button>
-        </div>
-
-        <div class="card">
           <h2 class="section-title"><span class="section-dot media"></span>ธีมสีและแผนที่</h2>
           <div class="field">ธีมแอปหลัก<div class="chip-row" id="themeRow"></div></div>
           <div class="field">ธีมจอขับขี่เต็มจอ (HUD)<div class="chip-row" id="hudThemeRow"></div></div>
           <div class="field">รูปแบบแผนที่<div class="chip-row" id="mapStyleRow"></div></div>
         </div>
 
-        <div class="card">
-          <h2 class="section-title"><span class="section-dot"></span>สำรองและกู้คืนข้อมูล</h2>
-          <div class="chip-row">
-            <button class="btn btn-sm" id="exportDataBtn" type="button">สำรองข้อมูล JSON</button>
-            <label class="btn btn-sm" style="cursor:pointer">
-              นำเข้า JSON
-              <input id="importDataInput" type="file" accept="application/json" hidden>
-            </label>
+        <details class="card-accordion">
+          <summary>
+            <span class="section-title"><span class="section-dot"></span>แอปบนแถบขับขี่ (Dock)</span>
+            <span style="display:flex;align-items:center;gap:8px"><span class="badge" id="dockCount">4/4</span><span class="chev">▾</span></span>
+          </summary>
+          <div class="accordion-body">
+            <ul class="list" id="dockMineList"></ul>
+            <button class="btn btn-primary btn-full" id="addAppBtn" type="button">+ เพิ่มทางลัดแอป</button>
+            <div id="appPicker" hidden>
+              <ul class="list" id="dockAllList"></ul>
+            </div>
           </div>
-          <p class="note" id="sysNote">ข้อมูลทริป ค่าน้ำมัน และเบอร์โทรทั้งหมดเก็บในเครื่องของคุณอย่างปลอดภัย</p>
-        </div>
+        </details>
+
+        <details class="card-accordion">
+          <summary>
+            <span class="section-title"><span class="section-dot ok"></span>เบอร์โทรด่วน</span>
+            <span class="chev">▾</span>
+          </summary>
+          <div class="accordion-body">
+            <ul class="list" id="contactList"></ul>
+            <div class="grid2">
+              <input class="input" id="contactNameIn" type="text" maxlength="24" placeholder="ชื่อ เช่น บ้าน">
+              <input class="input" id="contactTelIn" type="tel" maxlength="20" placeholder="เบอร์โทร">
+            </div>
+            <button class="btn btn-full" id="contactAddBtn" type="button">+ เพิ่มเบอร์โทรด่วน</button>
+          </div>
+        </details>
+
+        <details class="card-accordion">
+          <summary>
+            <span class="section-title"><span class="section-dot"></span>สำรองข้อมูล & ติดตั้งแอป (PWA)</span>
+            <span class="chev">▾</span>
+          </summary>
+          <div class="accordion-body">
+            <button class="btn btn-primary btn-full" id="pwaInstallBtn" type="button" hidden>📲 ติดตั้ง RideDash ลงหน้าจอโฮม</button>
+            <div class="chip-row">
+              <button class="btn btn-sm" id="exportDataBtn" type="button">สำรองข้อมูล JSON</button>
+              <label class="btn btn-sm" style="cursor:pointer">
+                นำเข้า JSON
+                <input id="importDataInput" type="file" accept="application/json" hidden>
+              </label>
+            </div>
+            <p class="note" id="sysNote">ข้อมูลทริป ค่าน้ำมัน และเบอร์โทรทั้งหมดเก็บในเครื่องของคุณอย่างปลอดภัย (บน iPhone: กด Share → เพิ่มไปยังหน้าจอโฮม)</p>
+          </div>
+        </details>
 
         <div class="card">
           <h2 class="section-title"><span class="section-dot ok"></span>ข้อตกลงและความเป็นส่วนตัว</h2>
